@@ -1,0 +1,157 @@
+import type { PkmnGame } from "../types/pokemon";
+
+export const games: PkmnGame[] = [
+  // Génération I — Kanto
+  {
+    name: "Rouge",
+    pokeApiId: 1,
+    pokeApiIdString: "red",
+    generation: 1,
+    region: "Kanto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/kanto/",
+  },
+  {
+    name: "Bleu",
+    pokeApiId: 2,
+    pokeApiIdString: "blue",
+    generation: 1,
+    region: "Kanto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/kanto/",
+  },
+  {
+    name: "Jaune",
+    pokeApiId: 3,
+    pokeApiIdString: "yellow",
+    generation: 1,
+    region: "Kanto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/kanto/",
+  },
+
+  // Génération II — Johto
+  {
+    name: "Or",
+    pokeApiId: 4,
+    pokeApiIdString: "gold",
+    generation: 2,
+    region: "Johto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/johto/",
+  },
+  {
+    name: "Argent",
+    pokeApiId: 5,
+    pokeApiIdString: "silver",
+    generation: 2,
+    region: "Johto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/johto/",
+  },
+  {
+    name: "Cristal",
+    pokeApiId: 6,
+    pokeApiIdString: "crystal",
+    generation: 2,
+    region: "Johto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/johto/",
+  },
+
+  // Génération III — Hoenn
+  {
+    name: "Rubis",
+    pokeApiId: 7,
+    pokeApiIdString: "ruby",
+    generation: 3,
+    region: "Hoenn",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/hoenn/",
+  },
+  {
+    name: "Saphir",
+    pokeApiId: 8,
+    pokeApiIdString: "sapphire",
+    generation: 3,
+    region: "Hoenn",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/hoenn/",
+  },
+  {
+    name: "Émeraude",
+    pokeApiId: 9,
+    pokeApiIdString: "emerald",
+    generation: 3,
+    region: "Hoenn",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/hoenn/",
+  },
+  {
+    name: "Rouge Feu",
+    pokeApiId: 10,
+    pokeApiIdString: "firered",
+    generation: 3,
+    region: "Kanto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/kanto/",
+  },
+  {
+    name: "Vert Feuille",
+    pokeApiId: 11,
+    pokeApiIdString: "leafgreen",
+    generation: 3,
+    region: "Kanto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/kanto/",
+  },
+
+  // Génération IV — Sinnoh
+  {
+    name: "Diamant",
+    pokeApiId: 12,
+    pokeApiIdString: "diamond",
+    generation: 4,
+    region: "Sinnoh",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/original-sinnoh/",
+  },
+  {
+    name: "Perle",
+    pokeApiId: 13,
+    pokeApiIdString: "pearl",
+    generation: 4,
+    region: "Sinnoh",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/original-sinnoh/",
+  },
+  {
+    name: "Platine",
+    pokeApiId: 14,
+    pokeApiIdString: "platinum",
+    generation: 4,
+    region: "Sinnoh",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/extended-sinnoh/",
+  },
+  {
+    name: "Or HeartGold",
+    pokeApiId: 15,
+    pokeApiIdString: "heartgold",
+    generation: 4,
+    region: "Johto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/updated-johto/",
+  },
+  {
+    name: "Argent SoulSilver",
+    pokeApiId: 16,
+    pokeApiIdString: "soulsilver",
+    generation: 4,
+    region: "Johto",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/updated-johto/",
+  },
+
+  // Génération V — Unys
+  {
+    name: "Noir",
+    pokeApiId: 17,
+    pokeApiIdString: "black",
+    generation: 5,
+    region: "Unys",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/original-unova/",
+  },
+  {
+    name: "Blanc",
+    pokeApiId: 18,
+    pokeApiIdString: "white",
+    generation: 5,
+    region: "Unys",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/original-unova/",
+  },
+];
