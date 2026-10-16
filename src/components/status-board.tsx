@@ -26,7 +26,6 @@ import {
   RiCheckboxCircleLine,
   RiLoader4Line,
   RiRefreshLine,
-  RiSendPlaneLine,
   RiErrorWarningLine,
 } from "@remixicon/react";
 
@@ -79,8 +78,6 @@ export default function StatusBoard() {
   const [statusData, setStatusData] = useState<ReponseStatut | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const [testMessage, setTestMessage] = useState("");
-  const [isSendingTest, setIsSendingTest] = useState(false);
 
   async function refresh() {
     setIsLoading(true);
@@ -93,27 +90,6 @@ export default function StatusBoard() {
       setErrorMessage("Impossible de joindre la route de statut.");
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  async function sendTestError() {
-    setIsSendingTest(true);
-    setTestMessage("");
-
-    try {
-      const reponse = await fetch("/api/admin/erreur-test", {
-        method: "POST",
-      });
-
-      setTestMessage(
-        reponse.status === 500
-          ? "Erreur de test envoyée : elle doit apparaître dans Sentry d'ici quelques secondes."
-          : `Réponse inattendue (statut ${reponse.status}).`,
-      );
-    } catch {
-      setTestMessage("Impossible d'envoyer l'erreur de test.");
-    } finally {
-      setIsSendingTest(false);
     }
   }
 
@@ -160,33 +136,12 @@ export default function StatusBoard() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={sendTestError}
-            disabled={isSendingTest}
-          >
-            {isSendingTest ? (
-              <RiLoader4Line className="animate-spin" />
-            ) : (
-              <RiSendPlaneLine />
-            )}
-            Envoyer une erreur de test
-          </Button>
-
           <Button onClick={refresh} disabled={isLoading}>
             <RiRefreshLine className={isLoading ? "animate-spin" : ""} />
             {isLoading ? "Vérification…" : "Relancer les tests"}
           </Button>
         </div>
       </div>
-
-      {testMessage && (
-        <Alert>
-          <RiErrorWarningLine />
-          <AlertTitle>Résultat du test</AlertTitle>
-          <AlertDescription>{testMessage}</AlertDescription>
-        </Alert>
-      )}
 
       {errorMessage && (
         <Alert variant="destructive">

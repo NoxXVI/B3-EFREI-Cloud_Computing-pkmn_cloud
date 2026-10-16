@@ -154,4 +154,20 @@ export const games: PkmnGame[] = [
     region: "Unys",
     pokedexUrl: "https://pokeapi.co/api/v2/pokedex/original-unova/",
   },
+  {
+    name: "Noir 2",
+    pokeApiId: 21,
+    pokeApiIdString: "black-2",
+    generation: 5,
+    region: "Unys",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/extended-unova/",
+  },
+  {
+    name: "Blanc 2",
+    pokeApiId: 22,
+    pokeApiIdString: "white-2",
+    generation: 5,
+    region: "Unys",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/extended-unova/",
+  },
 ];

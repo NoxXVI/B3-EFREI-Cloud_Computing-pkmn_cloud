@@ -10,7 +10,7 @@ export const controleBase: Control = {
   verify: async () => {
     const supabase = createAdminClient();
     const { count, error } = await supabase
-      .from("checklist")
+      .from("checklists")
       .select("id", { count: "exact", head: true });
 
     if (error) {

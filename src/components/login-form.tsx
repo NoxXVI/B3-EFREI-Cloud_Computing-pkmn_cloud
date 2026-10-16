@@ -16,11 +16,15 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { RiErrorWarningLine } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 
-export function LogInForm() {
+export function LogInForm({ linkError }: { linkError: boolean }) {
   const [email, setEmail] = useState("");
   const [password, setPasword] = useState("");
   const [send, setSend] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    linkError
+      ? "Ce lien de connexion est invalide ou a expiré. Demandez-en un nouveau."
+      : "",
+  );
 
   const router = useRouter();
 

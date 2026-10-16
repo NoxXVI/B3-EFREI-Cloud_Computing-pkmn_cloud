@@ -12,11 +12,13 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr" className={cn("font-sans", publicSans.variable)}>
-      <body>
-        <Suspense fallback={null}>
-          <TopBar />
-        </Suspense>
-        <Providers>{children}</Providers>
+      <body className="flex min-h-svh flex-col">
+        <Providers>
+          <Suspense fallback={null}>
+            <TopBar />
+          </Suspense>
+          {children}
+        </Providers>
       </body>
     </html>
   );
