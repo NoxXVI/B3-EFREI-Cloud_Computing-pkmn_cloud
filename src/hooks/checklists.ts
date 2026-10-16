@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createChecklist, getChecklists } from "@/lib/api/checklist";
+import {
+  createChecklist,
+  getChecklistById,
+  getChecklists,
+} from "@/lib/api/checklist";
+import { getChecklistPokemon } from "@/lib/api/checklist/pokemon";
 
 export function useChecklists() {
   return useQuery({
@@ -18,5 +23,23 @@ export function useCreateChecklist() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["checklists"] });
     },
+  });
+}
+
+export function useChecklist(checklistId: string) {
+  return useQuery({
+    queryKey: ["checklist", checklistId],
+    queryFn: () => getChecklistById(checklistId),
+    enabled: Boolean(checklistId),
+    staleTime: 30_000,
+  });
+}
+
+export function useChecklistPokemon(checklistId: string) {
+  return useQuery({
+    queryKey: ["checklist-pokemon", checklistId],
+    queryFn: () => getChecklistPokemon(checklistId),
+    enabled: Boolean(checklistId),
+    staleTime: 30_000,
   });
 }
