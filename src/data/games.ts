@@ -160,7 +160,7 @@ export const games: PkmnGame[] = [
     pokeApiIdString: "black-2",
     generation: 5,
     region: "Unys",
-    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/extended-unova/",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/updated-unova/",
   },
   {
     name: "Blanc 2",
@@ -168,6 +168,6 @@ export const games: PkmnGame[] = [
     pokeApiIdString: "white-2",
     generation: 5,
     region: "Unys",
-    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/extended-unova/",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/updated-unova/",
   },
 ];
