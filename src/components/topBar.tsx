@@ -1,10 +1,13 @@
 
 
 import Link from "next/link";
+import { connection } from "next/server";
 import LogOutButton from "@/components/logout-button";
 import { createClientServer } from "@/lib/supabase/server";
 
 export default async function EnTete() {
+  await connection();
+
   const supabase = await createClientServer();
   const {
     data: { user },
