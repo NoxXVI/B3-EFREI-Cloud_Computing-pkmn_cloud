@@ -1,6 +1,5 @@
 "use client";
 
-import { usePokemon } from "@/hooks/pokemon";
 import { useChecklists } from "@/hooks/checklists";
 import { Card, CardContent } from "@/components/ui/card";
 import {

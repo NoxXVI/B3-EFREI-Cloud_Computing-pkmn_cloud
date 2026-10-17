@@ -169,3 +169,64 @@ export async function getChecklistPokemon(
 
   return pokemon;
 }
+
+/**
+ * Enregistre les lignes modifiées d'une checklist de l'utilisateur connecté.
+ *
+ * Un seul `upsert` pour toutes les lignes : `onConflict` s'appuie sur la clé
+ * primaire composite `(checklist_id, pokemon_api_id)`. Comme partout ailleurs,
+ * aucun filtre `user_id` : RLS décide si l'écriture est permise — c'est aussi
+ * elle qui doit vérifier que la checklist appartient bien à l'utilisateur,
+ * cette table n'ayant pas de colonne `user_id`.
+ *
+ * `updated_at` est fourni explicitement : la colonne n'a qu'un `DEFAULT now()`,
+ * donc sur un `UPDATE` elle resterait figée s'il n'y a pas de trigger.
+ *
+ * Renvoie `null` si personne n'est connecté.
+ */
+export async function saveChecklistPokemon(
+  checklistId: string,
+  lignes: { pokemonApiId: number; isCaptured: boolean }[],
+): Promise<ChecklistPokemon[] | null> {
+  const supabase = await createClientServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const maintenant = new Date().toISOString();
+
+  const { error } = await supabase.from("checklist_pokemon").upsert(
+    lignes.map((ligne) => ({
+      checklist_id: checklistId,
+      pokemon_api_id: ligne.pokemonApiId,
+      is_captured: ligne.isCaptured,
+      updated_at: maintenant,
+    })),
+    { onConflict: "checklist_id,pokemon_api_id" },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  // La carte de l'accueil affiche `updated_at` et la liste est triée dessus :
+  // sans ce bump, les deux mentent après une édition Pokémon. Best effort : si
+  // RLS interdit l'UPDATE sur `checklists`, la date ne bouge pas mais l'édition
+  // des Pokémon reste enregistrée.
+  await supabase
+    .from("checklists")
+    .update({ updated_at: maintenant })
+    .eq("id", checklistId);
+
+  await redis.del(cleCachePokemon(user.id, checklistId));
+  await redis.del(cleCacheChecklist(user.id, checklistId));
+  await redis.del(cleCache(user.id));
+
+  // Relecture fraîche : la purge ci-dessus force la requête SQL.
+  return getChecklistPokemon(checklistId);
+}
+

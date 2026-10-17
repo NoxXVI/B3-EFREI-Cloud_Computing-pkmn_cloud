@@ -34,7 +34,7 @@ export const games: PkmnGame[] = [
     pokeApiIdString: "gold",
     generation: 2,
     region: "Johto",
-    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/johto/",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/updated-johto/",
   },
   {
     name: "Argent",
@@ -42,7 +42,7 @@ export const games: PkmnGame[] = [
     pokeApiIdString: "silver",
     generation: 2,
     region: "Johto",
-    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/johto/",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/updated-johto/",
   },
   {
     name: "Cristal",
@@ -50,7 +50,7 @@ export const games: PkmnGame[] = [
     pokeApiIdString: "crystal",
     generation: 2,
     region: "Johto",
-    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/johto/",
+    pokedexUrl: "https://pokeapi.co/api/v2/pokedex/updated-johto/",
   },
 
   // Génération III — Hoenn

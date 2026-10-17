@@ -39,5 +39,5 @@ async function ChecklistDetail({
     redirect("/");
   }
 
-  return <ChecklistPokemonTable checklistId={checklist.id} />;
+  return <ChecklistPokemonTable checklistId={checklist.id} gameKey={checklist.game_key} />;
 }
