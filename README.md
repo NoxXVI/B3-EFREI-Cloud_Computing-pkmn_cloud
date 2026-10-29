@@ -60,7 +60,8 @@ lecture seule et signale tout monitor en panne. La brique est pertinente pour
 une application déployée : elle détecte une indisponibilité Vercel ou Supabase
 sans attendre qu'un utilisateur la signale.
 
-La page de statut publique est fournie par UptimeRobot (Status Pages).
+La page de statut publique est accessible à l'adresse
+https://stats.uptimerobot.com/48vgyRuscX.
 
 ## Modèle d'IA
 
