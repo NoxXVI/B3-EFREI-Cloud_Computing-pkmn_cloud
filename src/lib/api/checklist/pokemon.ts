@@ -1,6 +1,6 @@
 import type { ChecklistPokemon } from "@/types/checklist";
 
-export type LigneAModifier = {
+export type ChecklistPokemonUpdate = {
   pokemonApiId: number;
   isCaptured: boolean;
 };
@@ -23,7 +23,7 @@ export async function getChecklistPokemon(
 
 export async function saveChecklistPokemon(
   checklistId: string,
-  rows: LigneAModifier[],
+  rows: ChecklistPokemonUpdate[],
 ): Promise<ChecklistPokemon[]> {
   const response = await fetch(
     `/api/checklist/${encodeURIComponent(checklistId)}/pokemon`,
@@ -35,12 +35,12 @@ export async function saveChecklistPokemon(
   );
 
   if (!response.ok) {
-    const corps: { error?: string } | null = await response
+    const body: { error?: string } | null = await response
       .json()
       .catch(() => null);
 
     throw new Error(
-      corps?.error ?? "Erreur lors de l'enregistrement des Pokémon",
+      body?.error ?? "Erreur lors de l'enregistrement des Pokémon",
     );
   }
 

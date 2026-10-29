@@ -28,7 +28,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "src/components/view-pokemon-dialog.tsx"
   ],
   "exclude": ["node_modules"]
 }

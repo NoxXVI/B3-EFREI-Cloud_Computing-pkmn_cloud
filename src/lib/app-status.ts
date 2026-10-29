@@ -1,4 +1,4 @@
-export type Status = "operationnel" | "degrade" | "en_panne";
+export type Status = "operational" | "degraded" | "down";
 
 export type ControlResult = {
   service: string;
@@ -17,14 +17,21 @@ export type Control = {
 const MAX_DELAY_DURATION_MS = 5000;
 const DEGRADATION_THRESHOLD_MS = 2000;
 
-export async function executeControlCheck(control: Control): Promise<ControlResult> {
+export async function executeControlCheck(
+  control: Control,
+): Promise<ControlResult> {
   const startTime = Date.now();
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
 
-  const timeoutExceeded = new Promise<never>((_, rejeter) => {
+  const timeoutExceeded = new Promise<never>((_, reject) => {
     timeoutHandle = setTimeout(
-      () => rejeter(new Error(`Aucune réponse après ${MAX_DELAY_DURATION_MS / 1000} secondes`)),
-      MAX_DELAY_DURATION_MS
+      () =>
+        reject(
+          new Error(
+            `Aucune réponse après ${MAX_DELAY_DURATION_MS / 1000} secondes`,
+          ),
+        ),
+      MAX_DELAY_DURATION_MS,
     );
   });
 
@@ -35,17 +42,18 @@ export async function executeControlCheck(control: Control): Promise<ControlResu
     return {
       service: control.service,
       description: control.description,
-      status: elapsedTimeMs > DEGRADATION_THRESHOLD_MS ? "degrade" : "operationnel",
+      status:
+        elapsedTimeMs > DEGRADATION_THRESHOLD_MS ? "degraded" : "operational",
       elapsedTimeMs: elapsedTimeMs,
       message,
     };
-  } catch (erreur) {
+  } catch (error) {
     return {
       service: control.service,
       description: control.description,
-      status: "en_panne",
+      status: "down",
       elapsedTimeMs: Date.now() - startTime,
-      message: erreur instanceof Error ? erreur.message : "Erreur inconnue",
+      message: error instanceof Error ? error.message : "Erreur inconnue",
     };
   } finally {
     clearTimeout(timeoutHandle);

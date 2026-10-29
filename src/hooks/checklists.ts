@@ -8,7 +8,7 @@ import {
 import {
   getChecklistPokemon,
   saveChecklistPokemon,
-  type LigneAModifier,
+  type ChecklistPokemonUpdate,
 } from "@/lib/api/checklist/pokemon";
 
 export function useChecklists() {
@@ -48,19 +48,11 @@ export function useChecklistPokemon(checklistId: string) {
   });
 }
 
-/**
- * Enregistre les lignes modifiées puis remet le cache client d'aplomb.
- *
- * La route renvoie la liste relue après purge du cache Upstash : on la pose
- * directement, ce qui évite un aller-retour et toute fenêtre où le tableau
- * afficherait d'anciennes valeurs. La checklist a vu son `updated_at` bouger,
- * donc le fil d'Ariane et la liste d'accueil sont invalidés.
- */
 export function useSaveChecklistPokemon(checklistId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (rows: LigneAModifier[]) =>
+    mutationFn: (rows: ChecklistPokemonUpdate[]) =>
       saveChecklistPokemon(checklistId, rows),
     onSuccess: (pokemon) => {
       queryClient.setQueryData(["checklist-pokemon", checklistId], pokemon);

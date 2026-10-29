@@ -1,6 +1,6 @@
 import type { Checklist } from "@/types/checklist";
 
-export type NouvelleChecklist = {
+export type NewChecklist = {
   name: string;
   gameKey: string;
 };
@@ -17,13 +17,11 @@ export async function getChecklists(): Promise<Checklist[]> {
   return body.checklists;
 }
 
-export async function createChecklist(
-  entree: NouvelleChecklist,
-): Promise<Checklist> {
+export async function createChecklist(input: NewChecklist): Promise<Checklist> {
   const response = await fetch("/api/checklist", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entree),
+    body: JSON.stringify(input),
   });
 
   if (!response.ok) {
@@ -35,10 +33,6 @@ export async function createChecklist(
   return body.checklist;
 }
 
-/**
- * Une checklist par son `id`. `null` quand elle n'existe pas ou n'appartient pas
- * à l'utilisateur (la route répond 404 dans les deux cas).
- */
 export async function getChecklistById(
   checklistId: string,
 ): Promise<Checklist | null> {

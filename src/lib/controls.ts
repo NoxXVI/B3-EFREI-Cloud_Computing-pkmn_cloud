@@ -3,8 +3,7 @@ import { redis } from "./cache";
 import { createAdminClient } from "./supabase/admin";
 import type { Control } from "@/lib/app-status";
 
-
-export const controleBase: Control = {
+export const databaseControl: Control = {
   service: "Supabase Database",
   description: "Base de données des fiches",
   verify: async () => {
@@ -21,12 +20,15 @@ export const controleBase: Control = {
   },
 };
 
-const controleAuth: Control = {
+const authControl: Control = {
   service: "Supabase Auth",
   description: "Connexion des utilisateurs",
   verify: async () => {
     const supabase = createAdminClient();
-    const { error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+    const { error } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1,
+    });
 
     if (error) {
       throw new Error(error.message);
@@ -36,7 +38,4 @@ const controleAuth: Control = {
   },
 };
 
-export const CONTROLES: Control[] = [
-  controleBase,
-  controleAuth,
-];
+export const CONTROLS: Control[] = [databaseControl, authControl];

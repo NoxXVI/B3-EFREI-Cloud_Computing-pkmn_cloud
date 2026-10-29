@@ -5,34 +5,25 @@ import { useParams, useSelectedLayoutSegments } from "next/navigation";
 
 import { useChecklist } from "@/hooks/checklists";
 
-const LIBELLES: Record<string, string> = {
+const LABELS: Record<string, string> = {
   checklists: "Checklists",
   admin: "Administration",
   auth: "Connexion",
   signup: "Inscription",
 };
 
-const idCourt = (id: string) => `${id.slice(0, 8)}…`;
+const shortId = (id: string) => `${id.slice(0, 8)}…`;
 
-function NomChecklist({ checklistId }: { checklistId: string }) {
+function ChecklistName({ checklistId }: { checklistId: string }) {
   const { data, isPending } = useChecklist(checklistId);
 
   if (isPending || !data) {
-    return <>{idCourt(checklistId)}</>;
+    return <>{shortId(checklistId)}</>;
   }
 
   return <>{data.name}</>;
 }
 
-/**
- * Fil d'Ariane de l'entête.
- *
- * Le root layout ne reçoit pas les params de ses routes filles, donc le fil est
- * reconstruit ici, côté client, depuis les segments actifs
- * (`useSelectedLayoutSegments`, le hook que Next documente pour les
- * breadcrumbs). Le nom de la checklist est résolu par `useChecklist` puisque
- * l'url ne porte qu'un uuid.
- */
 export function Breadcrumb() {
   const params = useParams();
   const checklistId =
@@ -60,12 +51,12 @@ export function Breadcrumb() {
       <ol className="flex items-center gap-1.5">
         {segments.map((segment, index) => {
           const href = `/${segments.slice(0, index + 1).join("/")}`;
-          const dernier = index === segments.length - 1;
-          const contenu =
+          const isLast = index === segments.length - 1;
+          const content =
             segment === checklistId ? (
-              <NomChecklist checklistId={segment} />
+              <ChecklistName checklistId={segment} />
             ) : (
-              (LIBELLES[segment] ?? segment)
+              (LABELS[segment] ?? segment)
             );
 
           return (
@@ -75,16 +66,16 @@ export function Breadcrumb() {
                   /
                 </span>
               )}
-              {dernier ? (
+              {isLast ? (
                 <span aria-current="page" className="font-medium">
-                  {contenu}
+                  {content}
                 </span>
               ) : (
                 <Link
                   href={href}
                   className="text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  {contenu}
+                  {content}
                 </Link>
               )}
             </li>

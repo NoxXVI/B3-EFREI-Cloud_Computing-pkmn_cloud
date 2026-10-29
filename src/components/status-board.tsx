@@ -29,7 +29,7 @@ import {
   RiErrorWarningLine,
 } from "@remixicon/react";
 
-type ReponseStatut = {
+type StatusResponse = {
   checkedAt: string;
   globalStatus: Status;
   services: ControlResult[];
@@ -37,45 +37,49 @@ type ReponseStatut = {
 
 const STATUSDISPLAY: Record<
   Status,
-  { libelle: string; variant: "default" | "secondary" | "destructive"; icon: typeof RiCheckboxCircleLine }
+  {
+    label: string;
+    variant: "default" | "secondary" | "destructive";
+    icon: typeof RiCheckboxCircleLine;
+  }
 > = {
-  operationnel: {
-    libelle: "Opérationnel",
+  operational: {
+    label: "Opérationnel",
     variant: "default",
     icon: RiCheckboxCircleLine,
   },
-  degrade: {
-    libelle: "Dégradé",
+  degraded: {
+    label: "Dégradé",
     variant: "secondary",
     icon: RiAlertLine,
   },
-  en_panne: {
-    libelle: "En panne",
+  down: {
+    label: "En panne",
     variant: "destructive",
     icon: RiErrorWarningLine,
   },
 };
 
 const GLOBAL_MESSAGE: Record<Status, string> = {
-  operationnel: "Tous les services sont opérationnels.",
-  degrade: "Au moins un service répond lentement.",
-  en_panne: "Au moins un service est en panne.",
+  operational: "Tous les services sont opérationnels.",
+  degraded: "Au moins un service répond lentement.",
+  down: "Au moins un service est en panne.",
 };
 
-async function fetchStatus(): Promise<ReponseStatut> {
-  const reponse = await fetch("/api/admin/status", {
+async function fetchStatus(): Promise<StatusResponse> {
+  const response = await fetch("/api/admin/status", {
     cache: "no-store",
   });
 
-  if (!reponse.ok) {
-    throw new Error(`Statut ${reponse.status}`);
+  if (!response.ok) {
+    throw new Error(`Statut ${response.status}`);
   }
 
-  return reponse.json();
+  return response.json();
 }
 
 export default function StatusBoard() {
-  const [statusData, setStatusData] = useState<ReponseStatut | null>(null);
+  const [statusData, setStatusData] = useState<StatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -84,8 +88,8 @@ export default function StatusBoard() {
     setErrorMessage("");
 
     try {
-      const resultat = await fetchStatus();
-      setStatusData(resultat);
+      const result = await fetchStatus();
+      setStatusData(result);
     } catch {
       setErrorMessage("Impossible de joindre la route de statut.");
     } finally {
@@ -94,30 +98,30 @@ export default function StatusBoard() {
   }
 
   useEffect(() => {
-  let cancelled = false;
+    let cancelled = false;
 
-  fetchStatus()
-    .then((resultat) => {
-      if (!cancelled) {
-        setStatusData(resultat);
-        setErrorMessage("");
-      }
-    })
-    .catch(() => {
-      if (!cancelled) {
-        setErrorMessage("Impossible de joindre la route de statut.");
-      }
-    })
-    .finally(() => {
-      if (!cancelled) {
-        setIsLoading(false);
-      }
-    });
+    fetchStatus()
+      .then((result) => {
+        if (!cancelled) {
+          setStatusData(result);
+          setErrorMessage("");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setErrorMessage("Impossible de joindre la route de statut.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
 
-  return () => {
-    cancelled = true;
-  };
-}, []);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const globalStatus = statusData
     ? STATUSDISPLAY[statusData.globalStatus]
@@ -127,9 +131,7 @@ export default function StatusBoard() {
     <main className="mx-auto w-full max-w-5xl space-y-6 p-6 md:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Administration
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Administration</h1>
           <p className="text-muted-foreground mt-1">
             État des services et outils de diagnostic.
           </p>
@@ -168,7 +170,7 @@ export default function StatusBoard() {
                 État général
                 <Badge variant={globalStatus.variant}>
                   <globalStatus.icon />
-                  {globalStatus.libelle}
+                  {globalStatus.label}
                 </Badge>
               </CardTitle>
               <CardDescription>
@@ -212,9 +214,7 @@ export default function StatusBoard() {
                       return (
                         <TableRow key={service.service}>
                           <TableCell>
-                            <div className="font-medium">
-                              {service.service}
-                            </div>
+                            <div className="font-medium">{service.service}</div>
                             <div className="text-sm text-muted-foreground">
                               {service.description}
                             </div>
@@ -223,7 +223,7 @@ export default function StatusBoard() {
                           <TableCell>
                             <Badge variant={status.variant}>
                               <StatusIcon />
-                              {status.libelle}
+                              {status.label}
                             </Badge>
                           </TableCell>
 

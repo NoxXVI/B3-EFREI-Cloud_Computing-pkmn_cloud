@@ -22,10 +22,10 @@ export async function GET(_request: Request, { params }: Props) {
 export async function PUT(request: Request, { params }: Props) {
   const { checklistId } = await params;
 
-  let corps: unknown;
+  let body: unknown;
 
   try {
-    corps = await request.json();
+    body = await request.json();
   } catch {
     return Response.json(
       { error: "Corps de requête invalide." },
@@ -33,7 +33,7 @@ export async function PUT(request: Request, { params }: Props) {
     );
   }
 
-  const { rows } = (corps ?? {}) as { rows?: unknown };
+  const { rows } = (body ?? {}) as { rows?: unknown };
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return Response.json(
@@ -42,10 +42,10 @@ export async function PUT(request: Request, { params }: Props) {
     );
   }
 
-  const lignes: { pokemonApiId: number; isCaptured: boolean }[] = [];
+  const updates: { pokemonApiId: number; isCaptured: boolean }[] = [];
 
-  for (const ligne of rows) {
-    const { pokemonApiId, isCaptured } = (ligne ?? {}) as {
+  for (const row of rows) {
+    const { pokemonApiId, isCaptured } = (row ?? {}) as {
       pokemonApiId?: unknown;
       isCaptured?: unknown;
     };
@@ -59,11 +59,11 @@ export async function PUT(request: Request, { params }: Props) {
       return Response.json({ error: "Ligne invalide." }, { status: 400 });
     }
 
-    lignes.push({ pokemonApiId, isCaptured });
+    updates.push({ pokemonApiId, isCaptured });
   }
 
   try {
-    const pokemon = await saveChecklistPokemon(checklistId, lignes);
+    const pokemon = await saveChecklistPokemon(checklistId, updates);
 
     if (!pokemon) {
       return Response.json({ error: "Non authentifié." }, { status: 401 });

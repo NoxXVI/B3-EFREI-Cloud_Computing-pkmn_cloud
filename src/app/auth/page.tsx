@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { LogInForm } from "@/components/login-form";
 import { createClientServer } from "@/lib/supabase/server";
 
-export const instant = false
+export const instant = false;
 
 export default async function Page({
   searchParams,

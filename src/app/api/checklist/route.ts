@@ -14,10 +14,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let corps: unknown;
+  let body: unknown;
 
   try {
-    corps = await request.json();
+    body = await request.json();
   } catch {
     return Response.json(
       { error: "Corps de requête invalide." },
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { name, gameKey } = (corps ?? {}) as {
+  const { name, gameKey } = (body ?? {}) as {
     name?: unknown;
     gameKey?: unknown;
   };

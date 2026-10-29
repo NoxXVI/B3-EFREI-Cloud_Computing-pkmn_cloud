@@ -6,9 +6,8 @@ export const redis = Redis.fromEnv();
 
 export const QUOTA_GENERATIONS = 5;
 
-export const limiteurGenerations = new Ratelimit({
+export const generationsLimiter = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(QUOTA_GENERATIONS, "1 h"),
   prefix: "fiches:generations",
 });
-

@@ -3,7 +3,7 @@ import { Checklist } from "@/types/checklist";
 import Link from "next/link";
 
 export function ChecklistCard({ checklist }: { checklist: Checklist }) {
-  const jeu = games.find((g) => g.pokeApiIdString === checklist.game_key);
+  const game = games.find((g) => g.pokeApiIdString === checklist.game_key);
 
   return (
     <Link href={`/checklists/${checklist.id}`} className="no-underline">
@@ -11,7 +11,7 @@ export function ChecklistCard({ checklist }: { checklist: Checklist }) {
         <hgroup>
           <h2 className="text-lg font-semibold">{checklist.name}</h2>
           <p className="text-sm text-gray-500">
-            Pokémon {jeu?.name ?? checklist.game_key}
+            Pokémon {game?.name ?? checklist.game_key}
           </p>
         </hgroup>
         <p className="text-sm text-gray-500">

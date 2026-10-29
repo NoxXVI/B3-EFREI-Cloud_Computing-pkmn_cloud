@@ -1,13 +1,12 @@
-import { CONTROLES } from "@/lib/controles";
+import { CONTROLS } from "@/lib/controls";
 import { executeControlCheck, type Status } from "@/lib/app-status";
 
-
 export async function GET() {
-  const services = await Promise.all(CONTROLES.map(executeControlCheck));
+  const services = await Promise.all(CONTROLS.map(executeControlCheck));
 
-  let globalStatus: Status = "operationnel";
-  if (services.some((s) => s.status === "degrade")) globalStatus = "degrade";
-  if (services.some((s) => s.status === "en_panne")) globalStatus = "en_panne";
+  let globalStatus: Status = "operational";
+  if (services.some((s) => s.status === "degraded")) globalStatus = "degraded";
+  if (services.some((s) => s.status === "down")) globalStatus = "down";
 
   return Response.json({
     checkedAt: new Date().toISOString(),

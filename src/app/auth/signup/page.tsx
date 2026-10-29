@@ -1,7 +1,6 @@
 import { SignUpForm } from "@/components/signup-form";
 
-export const instant = false
-
+export const instant = false;
 
 export default async function Page({
   searchParams,

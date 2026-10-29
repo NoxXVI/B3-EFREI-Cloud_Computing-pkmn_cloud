@@ -1,7 +1,6 @@
 import type { PkmnGame } from "../types/pokemon";
 
 export const games: PkmnGame[] = [
-  // Génération I — Kanto
   {
     name: "Rouge",
     pokeApiId: 1,
@@ -27,7 +26,6 @@ export const games: PkmnGame[] = [
     pokedexUrl: "https://pokeapi.co/api/v2/pokedex/kanto/",
   },
 
-  // Génération II — Johto
   {
     name: "Or",
     pokeApiId: 4,
@@ -53,7 +51,6 @@ export const games: PkmnGame[] = [
     pokedexUrl: "https://pokeapi.co/api/v2/pokedex/updated-johto/",
   },
 
-  // Génération III — Hoenn
   {
     name: "Rubis",
     pokeApiId: 7,
@@ -95,7 +92,6 @@ export const games: PkmnGame[] = [
     pokedexUrl: "https://pokeapi.co/api/v2/pokedex/kanto/",
   },
 
-  // Génération IV — Sinnoh
   {
     name: "Diamant",
     pokeApiId: 12,
@@ -137,7 +133,6 @@ export const games: PkmnGame[] = [
     pokedexUrl: "https://pokeapi.co/api/v2/pokedex/updated-johto/",
   },
 
-  // Génération V — Unys
   {
     name: "Noir",
     pokeApiId: 17,

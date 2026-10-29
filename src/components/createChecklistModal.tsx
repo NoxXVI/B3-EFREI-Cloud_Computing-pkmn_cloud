@@ -33,7 +33,11 @@ import { useCreateChecklist } from "@/hooks/checklists";
 
 type Game = (typeof games)[number];
 
-export function CreateChecklistModal({ render }: { render: React.ReactElement }) {
+export function CreateChecklistModal({
+  render,
+}: {
+  render: React.ReactElement;
+}) {
   const [open, setOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [name, setName] = useState("");
@@ -41,17 +45,17 @@ export function CreateChecklistModal({ render }: { render: React.ReactElement })
 
   const { mutateAsync, isPending } = useCreateChecklist();
 
-  function reinitialiser() {
+  function reset() {
     setSelectedGame(null);
     setName("");
     setError("");
   }
 
-  function handleOpenChange(nouveau: boolean) {
-    setOpen(nouveau);
+  function handleOpenChange(isOpen: boolean) {
+    setOpen(isOpen);
 
-    if (!nouveau) {
-      reinitialiser();
+    if (!isOpen) {
+      reset();
     }
   }
 
@@ -101,10 +105,7 @@ export function CreateChecklistModal({ render }: { render: React.ReactElement })
                   setSelectedGame(game ?? null);
                 }}
               >
-                <ComboboxInput
-                  id="game"
-                  placeholder="Sélectionnez un jeu…"
-                />
+                <ComboboxInput id="game" placeholder="Sélectionnez un jeu…" />
                 <ComboboxContent>
                   <ComboboxEmpty>Aucun jeu trouvé</ComboboxEmpty>
                   <ComboboxList>

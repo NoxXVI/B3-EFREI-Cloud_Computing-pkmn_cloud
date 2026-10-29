@@ -38,66 +38,42 @@ import {
   useSaveChecklistPokemon,
 } from "@/hooks/checklists";
 import { usePokedex } from "@/hooks/pokemon";
+import { spriteUrl } from "@/lib/pokemon-labels";
 import type { ChecklistPokemon } from "@/types/checklist";
-import type { ModePokedex, PokedexEntry } from "@/types/pokemon";
+import type { CaptureFilter, ChatFilterPatch } from "@/types/chat";
+import type { PokedexMode, PokedexEntry } from "@/types/pokemon";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { ViewPokemonModal } from "./view-pokemon-dialog";
+import { ChatAssistant } from "./chat-drawer";
 
-const sprite = (pokemonApiId: number) =>
-  `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonApiId}.png`;
-
-type Etat = "tous" | "captures" | "non-captures" | "absents";
-
-const ETATS: { valeur: Etat; libelle: string }[] = [
-  { valeur: "tous", libelle: "Tous" },
-  { valeur: "captures", libelle: "Capturés" },
-  { valeur: "non-captures", libelle: "Non capturés" },
-  { valeur: "absents", libelle: "Absents" },
+const CAPTURE_FILTERS: { value: CaptureFilter; label: string }[] = [
+  { value: "all", label: "Tous" },
+  { value: "captured", label: "Capturés" },
+  { value: "uncaptured", label: "Non capturés" },
+  { value: "absent", label: "Absents" },
 ];
 
-/**
- * Le mode change la source de données, pas seulement les numéros : le régional
- * est le Pokédex du jeu, le national part du Pokédex national coupé à la
- * génération du jeu, donc générations précédentes incluses.
- */
-const MODES: { valeur: ModePokedex; libelle: string }[] = [
-  { valeur: "regional", libelle: "Régional" },
-  { valeur: "national", libelle: "National" },
+const POKEDEX_MODES: { value: PokedexMode; label: string }[] = [
+  { value: "regional", label: "Régional" },
+  { value: "national", label: "National" },
 ];
 
-/** Insensible à la casse et aux accents : « Électrode » ⇄ « electrode ». */
-function normaliser(valeur: string) {
-  return valeur
+function normalize(value: string) {
+  return value
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLocaleLowerCase("fr");
 }
 
-/**
- * État d'une entrée : la modification locale prime sur la base.
- * `undefined` = aucune ligne, donc le Pokémon n'est pas dans la checklist.
- */
-function etatDe(
-  entree: PokedexEntry,
-  modifs: Map<number, boolean>,
+function captureStateOf(
+  entry: PokedexEntry,
+  pendingChanges: Map<number, boolean>,
   index: Map<number, ChecklistPokemon>,
 ) {
-  return modifs.get(entree.id) ?? index.get(entree.id)?.is_captured;
+  return pendingChanges.get(entry.id) ?? index.get(entry.id)?.is_captured;
 }
 
-/**
- * Le tableau affiche tout le Pokédex du jeu (`game_key`), fusionné avec les
- * lignes de `checklist_pokemon` par id national.
- *
- * Trois états par ligne : pas de ligne du tout (le Pokémon n'est pas dans la
- * checklist), `is_captured = false`, `is_captured = true`. La case à cocher
- * écrit `is_captured` ; cocher une entrée absente crée la ligne, et décocher
- * une entrée absente revient simplement à l'état absent plutôt que de créer une
- * ligne « non capturé » que l'utilisateur n'a pas demandée.
- *
- * L'en-tête reste affiché pendant les chargements et les erreurs : c'est ce qui
- * permet de revenir en régional si le national ne se charge pas.
- */
 export function ChecklistPokemonTable({
   checklistId,
   gameKey,
@@ -105,91 +81,102 @@ export function ChecklistPokemonTable({
   checklistId: string;
   gameKey: string;
 }) {
-  const [recherche, setRecherche] = useState("");
-  const [etat, setEtat] = useState<Etat>("tous");
-  const [mode, setMode] = useState<ModePokedex>("regional");
-  // Modifications en attente d'enregistrement, par id national.
-  const [modifs, setModifs] = useState<Map<number, boolean>>(new Map());
+  const [search, setSearch] = useState("");
+  const [captureFilter, setCaptureFilter] = useState<CaptureFilter>("all");
+  const [mode, setMode] = useState<PokedexMode>("regional");
+  const [pendingChanges, setPendingChanges] = useState<Map<number, boolean>>(
+    new Map(),
+  );
 
   const dex = usePokedex(gameKey, mode);
-  const lignes = useChecklistPokemon(checklistId);
-  const enregistrement = useSaveChecklistPokemon(checklistId);
+  const rows = useChecklistPokemon(checklistId);
+  const saveMutation = useSaveChecklistPokemon(checklistId);
 
   const index = useMemo(() => {
-    const parId = new Map<number, ChecklistPokemon>();
+    const byId = new Map<number, ChecklistPokemon>();
 
-    for (const ligne of lignes.data ?? []) {
-      parId.set(ligne.pokemon_api_id, ligne);
+    for (const row of rows.data ?? []) {
+      byId.set(row.pokemon_api_id, row);
     }
 
-    return parId;
-  }, [lignes.data]);
+    return byId;
+  }, [rows.data]);
 
-  const affichees = useMemo(() => {
-    const filtre = normaliser(recherche.trim());
+  const visibleEntries = useMemo(() => {
+    const filter = normalize(search.trim());
 
     return (dex.data?.entries ?? [])
-      .filter((entree) => {
-        const actuel = etatDe(entree, modifs, index);
+      .filter((entry) => {
+        const current = captureStateOf(entry, pendingChanges, index);
 
-        if (etat === "captures" && actuel !== true) {
+        if (captureFilter === "captured" && current !== true) {
           return false;
         }
 
-        if (etat === "non-captures" && actuel !== false) {
+        if (captureFilter === "uncaptured" && current !== false) {
           return false;
         }
 
-        if (etat === "absents" && actuel !== undefined) {
+        if (captureFilter === "absent" && current !== undefined) {
           return false;
         }
 
-        if (!filtre) {
+        if (!filter) {
           return true;
         }
 
-        // Recherche sur le nom, ou sur le numéro affiché — celui-là même que la
-        // colonne N° montre à l'utilisateur.
         return (
-          normaliser(entree.name).includes(filtre) ||
-          String(entree.number) === filtre
+          normalize(entry.name).includes(filter) ||
+          String(entry.number) === filter
         );
       })
       .sort((a, b) => a.number - b.number);
-  }, [dex.data, index, modifs, etat, recherche]);
+  }, [dex.data, index, pendingChanges, captureFilter, search]);
 
-  const facettesActives =
-    (etat === "tous" ? 0 : 1) + (mode === "regional" ? 0 : 1);
+  const activeFacets =
+    (captureFilter === "all" ? 0 : 1) + (mode === "regional" ? 0 : 1);
 
-  const basculer = (entree: PokedexEntry, coche: boolean) => {
-    setModifs((precedent) => {
-      const suivant = new Map(precedent);
-      const enBase = index.get(entree.id)?.is_captured;
+  const toggle = (entry: PokedexEntry, checked: boolean) => {
+    setPendingChanges((previous) => {
+      const next = new Map(previous);
+      const stored = index.get(entry.id)?.is_captured;
 
-      if (coche === enBase || (!coche && enBase === undefined)) {
-        suivant.delete(entree.id);
+      if (checked === stored || (!checked && stored === undefined)) {
+        next.delete(entry.id);
       } else {
-        suivant.set(entree.id, coche);
+        next.set(entry.id, checked);
       }
 
-      return suivant;
+      return next;
     });
   };
 
-  const enregistrer = () => {
-    enregistrement.mutate(
-      [...modifs].map(([pokemonApiId, isCaptured]) => ({
+  const save = () => {
+    saveMutation.mutate(
+      [...pendingChanges].map(([pokemonApiId, isCaptured]) => ({
         pokemonApiId,
         isCaptured,
       })),
-      { onSuccess: () => setModifs(new Map()) },
+      { onSuccess: () => setPendingChanges(new Map()) },
     );
   };
 
-  // L'erreur passe avant le test sur `data` : en cas d'échec, `data` est
-  // indéfini et le tableau resterait bloqué sur « Chargement ».
-  const erreur = dex.error ?? lignes.error;
-  const chargement = !dex.data || !lignes.data;
+  const applyFilterPatch = (patch: ChatFilterPatch) => {
+    if (patch.search !== undefined) {
+      setSearch(patch.search);
+    }
+
+    if (patch.capture !== undefined) {
+      setCaptureFilter(patch.capture);
+    }
+
+    if (patch.mode !== undefined) {
+      setMode(patch.mode);
+    }
+  };
+
+  const error = dex.error ?? rows.error;
+  const loading = !dex.data || !rows.data;
 
   return (
     <section>
@@ -198,15 +185,15 @@ export function ChecklistPokemonTable({
           name="search"
           type="search"
           placeholder="Rechercher un Pokémon"
-          value={recherche}
-          onChange={(evenement) => setRecherche(evenement.target.value)}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
         />
         <Popover>
           <PopoverTrigger render={<Button variant="outline" />}>
             <RiFilter3Line />
             Filtres
-            {facettesActives > 0 && (
-              <Badge variant="secondary">{facettesActives}</Badge>
+            {activeFacets > 0 && (
+              <Badge variant="secondary">{activeFacets}</Badge>
             )}
           </PopoverTrigger>
           <PopoverContent>
@@ -215,15 +202,17 @@ export function ChecklistPokemonTable({
                 État
               </legend>
               <div className="flex flex-wrap gap-1">
-                {ETATS.map((choix) => (
+                {CAPTURE_FILTERS.map((option) => (
                   <Button
-                    key={choix.valeur}
+                    key={option.value}
                     size="sm"
-                    variant={etat === choix.valeur ? "secondary" : "outline"}
-                    aria-pressed={etat === choix.valeur}
-                    onClick={() => setEtat(choix.valeur)}
+                    variant={
+                      captureFilter === option.value ? "secondary" : "outline"
+                    }
+                    aria-pressed={captureFilter === option.value}
+                    onClick={() => setCaptureFilter(option.value)}
                   >
-                    {choix.libelle}
+                    {option.label}
                   </Button>
                 ))}
               </div>
@@ -233,15 +222,15 @@ export function ChecklistPokemonTable({
                 Pokédex
               </legend>
               <div className="flex flex-wrap gap-1">
-                {MODES.map((choix) => (
+                {POKEDEX_MODES.map((option) => (
                   <Button
-                    key={choix.valeur}
+                    key={option.value}
                     size="sm"
-                    variant={mode === choix.valeur ? "secondary" : "outline"}
-                    aria-pressed={mode === choix.valeur}
-                    onClick={() => setMode(choix.valeur)}
+                    variant={mode === option.value ? "secondary" : "outline"}
+                    aria-pressed={mode === option.value}
+                    onClick={() => setMode(option.value)}
                   >
-                    {choix.libelle}
+                    {option.label}
                   </Button>
                 ))}
               </div>
@@ -257,36 +246,37 @@ export function ChecklistPokemonTable({
           Import
         </Button>
         <Button
-          onClick={enregistrer}
-          disabled={modifs.size === 0 || enregistrement.isPending}
+          onClick={save}
+          disabled={pendingChanges.size === 0 || saveMutation.isPending}
         >
-          {enregistrement.isPending ? (
+          {saveMutation.isPending ? (
             <RiLoader4Line className="animate-spin" />
           ) : (
             <RiSaveLine />
           )}
-          Enregistrer{modifs.size > 0 ? ` (${modifs.size})` : ""}
+          Enregistrer
+          {pendingChanges.size > 0 ? ` (${pendingChanges.size})` : ""}
         </Button>
       </div>
 
-      {enregistrement.isError && (
+      {saveMutation.isError && (
         <Alert variant="destructive" className="m-2">
           <RiErrorWarningLine />
           <AlertTitle>Enregistrement impossible</AlertTitle>
           <AlertDescription>
-            {enregistrement.error.message} Vos modifications sont conservées :
+            {saveMutation.error.message} Vos modifications sont conservées :
             réessayez avec le bouton Enregistrer.
           </AlertDescription>
         </Alert>
       )}
 
-      {erreur ? (
+      {error ? (
         <Alert variant="destructive" className="m-2">
           <RiErrorWarningLine />
           <AlertTitle>Impossible de charger les Pokémon</AlertTitle>
-          <AlertDescription>{erreur.message}</AlertDescription>
+          <AlertDescription>{error.message}</AlertDescription>
         </Alert>
-      ) : chargement ? (
+      ) : loading ? (
         <Empty>
           <EmptyHeader>
             <RiLoader4Line className="animate-spin" />
@@ -308,7 +298,7 @@ export function ChecklistPokemonTable({
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
-      ) : affichees.length === 0 ? (
+      ) : visibleEntries.length === 0 ? (
         <p className="text-muted-foreground p-6 text-center text-sm">
           Aucun Pokémon ne correspond à ces filtres.
         </p>
@@ -324,44 +314,58 @@ export function ChecklistPokemonTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {affichees.map((entree) => {
-              const ligne = index.get(entree.id);
-              const actuel = etatDe(entree, modifs, index);
+            {visibleEntries.map((entry) => {
+              const row = index.get(entry.id);
+              const current = captureStateOf(entry, pendingChanges, index);
 
               return (
-                <TableRow key={entree.id}>
+                <TableRow key={entry.id}>
                   <TableCell>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={sprite(entree.id)}
+                      src={spriteUrl(entry.id)}
                       alt=""
                       width={40}
                       height={40}
                       loading="lazy"
                     />
                   </TableCell>
-                  <TableCell>{entree.number}</TableCell>
-                  <TableCell className="capitalize">{entree.name}</TableCell>
+                  <TableCell>{entry.number}</TableCell>
+                  <TableCell>
+                    <ViewPokemonModal
+                      render={
+                        <Button
+                          variant="link"
+                          className="h-auto justify-start px-0"
+                        >
+                          {entry.name}
+                        </Button>
+                      }
+                      pokemonApiId={entry.id}
+                      gameKey={gameKey}
+                      capture={current}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Checkbox
-                        checked={actuel ?? false}
-                        disabled={enregistrement.isPending}
-                        aria-label={`Capturé : ${entree.name}`}
-                        onCheckedChange={(coche) => basculer(entree, coche)}
+                        checked={current ?? false}
+                        disabled={saveMutation.isPending}
+                        aria-label={`Capturé : ${entry.name}`}
+                        onCheckedChange={(checked) => toggle(entry, checked)}
                       />
                       <span className="text-muted-foreground text-xs">
-                        {actuel === undefined
+                        {current === undefined
                           ? "hors checklist"
-                          : actuel
+                          : current
                             ? "capturé"
                             : "non capturé"}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {ligne
-                      ? new Date(ligne.updated_at).toLocaleDateString("fr-FR")
+                    {row
+                      ? new Date(row.updated_at).toLocaleDateString("fr-FR")
                       : ""}
                   </TableCell>
                 </TableRow>
@@ -370,6 +374,11 @@ export function ChecklistPokemonTable({
           </TableBody>
         </Table>
       )}
+
+      <ChatAssistant
+        filters={{ search, capture: captureFilter, mode }}
+        onFiltersChange={applyFilterPatch}
+      />
     </section>
   );
 }

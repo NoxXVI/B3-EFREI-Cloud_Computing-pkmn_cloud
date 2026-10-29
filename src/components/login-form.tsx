@@ -18,8 +18,8 @@ import { useRouter } from "next/navigation";
 
 export function LogInForm({ linkError }: { linkError: boolean }) {
   const [email, setEmail] = useState("");
-  const [password, setPasword] = useState("");
-  const [send, setSend] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(
     linkError
       ? "Ce lien de connexion est invalide ou a expiré. Demandez-en un nouveau."
@@ -30,7 +30,7 @@ export function LogInForm({ linkError }: { linkError: boolean }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSend(true);
+    setIsSubmitting(true);
     setError("");
 
     const supabase = createClient();
@@ -39,7 +39,7 @@ export function LogInForm({ linkError }: { linkError: boolean }) {
       password,
     });
 
-    setSend(false);
+    setIsSubmitting(false);
 
     if (error) {
       console.error(error);
@@ -79,7 +79,7 @@ export function LogInForm({ linkError }: { linkError: boolean }) {
               <Input
                 id="password"
                 type="password"
-                onChange={(e) => setPasword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </Field>
