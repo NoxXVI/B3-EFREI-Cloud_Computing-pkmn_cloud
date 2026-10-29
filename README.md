@@ -20,6 +20,9 @@ Fonctionnalités :
 - assistant qui traduit une demande en langage naturel en filtres du tableau ;
 - panneau `/admin`, réservé aux administrateurs, qui affiche l'état des services.
 
+Une démonstration vidéo du parcours est disponible dans
+[`docs/video.mp4`](docs/video.mp4).
+
 ## Adresse de production
 
 https://b3-efrei-cloud-computing-pkmn-cloud.vercel.app/
