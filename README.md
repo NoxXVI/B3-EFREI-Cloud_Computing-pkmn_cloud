@@ -1,36 +1,146 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pokémon Cloud
 
-## Getting Started
+Application de suivi de Pokédex : chaque utilisateur crée des checklists par
+jeu, coche les Pokémon capturés et peut piloter les filtres du tableau avec un
+assistant IA.
 
-First, run the development server:
+## Présentation
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+L'application s'adresse aux joueurs qui veulent suivre leur progression sur
+plusieurs jeux Pokémon sans tenir de tableur. Une checklist est rattachée à un
+jeu (Pokémon Rouge, Écarlate, etc.) et reprend le Pokédex régional ou national
+correspondant.
+
+Fonctionnalités principales :
+
+- inscription et connexion par e-mail / mot de passe via Supabase Auth ;
+- création de checklists par jeu ;
+- recherche, filtre par état de capture (capturé, non capturé, absent) et
+  bascule entre Pokédex régional et national ;
+- fiche Pokémon : types, évolutions, conditions d'obtention, rencontres ;
+- assistant IA qui applique les filtres du tableau à partir d'une demande en
+  langage naturel ;
+- panneau `/admin` réservé aux administrateurs, avec l'état des services.
+
+## Adresse de production
+
+https://b3-efrei-cloud-computing-pkmn-cloud.vercel.app/
+
+## Architecture
+
+| Service | Rôle |
+| --- | --- |
+| Next.js 16 (App Router) sur Vercel | Interface, routes API, proxy d'authentification |
+| Supabase Auth | Inscription, connexion, session par cookies |
+| Supabase Postgres + RLS | Checklists et Pokémon capturés, isolés par utilisateur |
+| Upstash Redis | Cache des Pokédex et des noms français, quota de l'assistant |
+| OpenCode Inference (API compatible OpenAI) | Modèle de langage de l'assistant |
+| LangChain | Agent et outil `apply_filters` |
+| Langfuse | Traces des appels IA : tokens, latence, coût |
+| PokéAPI + CSV PokeAPI | Données Pokémon et noms français |
+
+Les appels à PokeAPI et au modèle d'IA passent uniquement par le serveur. Le
+navigateur ne reçoit que les données nécessaires à l'affichage.
+
+### Briques au choix
+
+**Langfuse — observabilité de l'IA.** Chaque requête `/api/chat` produit une
+trace Langfuse avec la génération, les tokens et le coût estimé. La brique est
+pertinente parce que l'assistant est la fonctionnalité la plus coûteuse de
+l'application : sans suivi, une dérive de consommation passerait inaperçue. Le
+prix du modèle est synchronisé depuis le catalogue `models.dev` avec
+`pnpm langfuse:sync-model`.
+
+La deuxième brique au choix est en cours d'ajout (surveillance externe
+UptimeRobot : route `/api/health`, monitor et page de statut publique).
+
+## Modèle d'IA
+
+Le modèle est appelé côté serveur dans `src/lib/ia.ts`, via une API compatible
+OpenAI configurée par `AI_BASE_URL`, `AI_API_KEY` et `AI_MODEL`. Le choix par
+défaut est `deepseek-v4.1-flash` : rapide et économique, avec un support correct
+du tool calling, ce qui suffit pour appliquer des filtres. L'agent ne répond
+pas aux questions sur les données Pokémon : il ne peut qu'appeler l'outil
+`apply_filters`, ce qui limite les hallucinations et la surface d'action.
+
+## Structure de données
+
+Deux tables, reliées par une clé étrangère et protégées par RLS :
+
+```text
+auth.users
+   │ 1
+   │
+   │ N
+checklists (id, user_id, name, game_key, revision, created_at, updated_at)
+   │ 1
+   │
+   │ N
+checklist_pokemon (checklist_id, user_id, pokemon_api_id, is_captured, updated_at)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `checklists.user_id` référence `auth.users(id)`; `checklist_pokemon.user_id`
+  est relié au propriétaire par la clé étrangère composite vers
+  `checklists(id, user_id)`.
+- La clé étrangère composite `(checklist_id, user_id)` garantit qu'une ligne
+  Pokémon appartient bien au propriétaire de la checklist.
+- RLS est activée sur les deux tables. Les policies `select`, `insert`,
+  `update` et `delete` comparent `user_id` à `auth.uid()`.
+- Le client service role n'est utilisé que côté serveur, dans `/admin`, et
+  contourne RLS par nature ; il n'est jamais exposé au navigateur.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Le schéma complet est versionné dans `supabase/migrations/0001_init.sql`. La
+migration `0002_checklist_pokemon_user_id.sql` met à niveau une base créée
+avant l'ajout de `user_id` sur `checklist_pokemon`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Lancer le projet en local
 
-## Learn More
+Prérequis : Node.js 20+, pnpm, un projet Supabase, une base Upstash Redis et une
+clé d'API pour le modèle.
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm install
+cp .env.example .env.local
+# renseigner les variables dans .env.local
+pnpm dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Appliquer le schéma dans le SQL Editor Supabase :
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- base neuve : `supabase/migrations/0001_init.sql` ;
+- base existante : `supabase/migrations/0002_checklist_pokemon_user_id.sql`.
 
-## Deploy on Vercel
+Pour accéder à `/admin`, attribuer le rôle admin au compte :
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sql
+update auth.users
+set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
+  || '{"role":"admin"}'::jsonb
+where email = 'admin@example.com';
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Commandes utiles :
+
+```bash
+pnpm lint
+pnpm build
+pnpm langfuse:sync-model   # synchronise le prix du modèle dans Langfuse
+```
+
+Variables d'environnement : voir `.env.example`. Les clés `SUPABASE_SECRET_KEY`,
+`AI_API_KEY`, `UPSTASH_REDIS_REST_TOKEN` et `LANGFUSE_SECRET_KEY` restent
+strictement côté serveur.
+
+## Limites et améliorations possibles
+
+- La deuxième brique au choix (UptimeRobot) reste à finaliser.
+- Pas de tests automatisés ni de CI.
+- Les checklists ne sont pas partageables entre utilisateurs.
+- Pas encore de renommage ni de suppression de checklist depuis l'interface.
+- Le Pokédex est chargé en entier puis filtré côté client ; une pagination
+  serait nécessaire pour des listes plus grandes.
+- L'assistant n'a pas de streaming et se limite à 10 messages par heure et par
+  utilisateur.
+- Les données viennent de PokeAPI et du dépôt PokeAPI : une indisponibilité de
+  ces sources dégrade le premier chargement, avant que le cache Redis ne prenne
+  le relais.

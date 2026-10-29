@@ -95,10 +95,14 @@ export async function runChatAgent(
   const patch: ChatFilterPatch = {};
 
   const llm = new ChatOpenAI({
-    model: process.env.AI_MODEL_NAME ?? "deepseek-v4.1-flash",
+    model:
+      process.env.AI_MODEL ??
+      process.env.AI_MODEL_NAME ??
+      "deepseek-v4.1-flash",
     apiKey: process.env.AI_API_KEY,
     configuration: {
       baseURL:
+        process.env.AI_BASE_URL ??
         process.env.AI_PROVIDER_URL ??
         "https://opencode.ai/inference/go/openai/v1",
       defaultHeaders: {

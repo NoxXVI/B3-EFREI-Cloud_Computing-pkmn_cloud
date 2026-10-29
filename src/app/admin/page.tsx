@@ -1,6 +1,15 @@
-import StatusBoard from "@/components/status-board";
+import { redirect } from "next/navigation";
 
-export default function Admin() {
+import StatusBoard from "@/components/status-board";
+import { isAdmin } from "@/lib/auth/is-admin";
+
+export const instant = false;
+
+export default async function Admin() {
+  if (!(await isAdmin())) {
+    redirect("/");
+  }
+
   return (
     <div>
       <StatusBoard />

@@ -16,7 +16,10 @@ const BASE_URL = (
 
 const PUBLIC_KEY = process.env.LANGFUSE_PUBLIC_KEY;
 const SECRET_KEY = process.env.LANGFUSE_SECRET_KEY;
-const MODEL_ID = process.env.AI_MODEL_NAME ?? "deepseek-v4.1-flash";
+const MODEL_ID =
+  process.env.AI_MODEL ??
+  process.env.AI_MODEL_NAME ??
+  "deepseek-v4.1-flash";
 const PROVIDER_ID = process.env.LANGFUSE_MODEL_PROVIDER ?? "opencode";
 const CATALOG_URL = "https://models.dev/api.json";
 

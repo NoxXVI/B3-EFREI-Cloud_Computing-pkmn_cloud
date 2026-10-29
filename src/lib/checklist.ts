@@ -61,7 +61,11 @@ export async function createChecklist(input: {
 
   const { data, error } = await supabase
     .from("checklists")
-    .insert({ name: input.name, game_key: input.gameKey })
+    .insert({
+      name: input.name,
+      game_key: input.gameKey,
+      user_id: user.id,
+    })
     .select(COLUMNS)
     .single();
 
@@ -159,6 +163,8 @@ export async function saveChecklistPokemon(
   const { error } = await supabase.from("checklist_pokemon").upsert(
     rows.map((row) => ({
       checklist_id: checklistId,
+      // user_id est rempli par le default auth.uid() de la table et contrôlé
+      // par la clé étrangère composite vers checklists(id, user_id).
       pokemon_api_id: row.pokemonApiId,
       is_captured: row.isCaptured,
       updated_at: now,

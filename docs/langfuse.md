@@ -20,7 +20,7 @@ continue de fonctionner normalement.
 ## Prix du modèle
 
 Langfuse calcule le coût à partir des tokens et du prix déclaré pour le modèle.
-Le projet utilise `AI_MODEL_NAME` (par défaut `deepseek-v4.1-flash`) via
+Le projet utilise `AI_MODEL` (par défaut `deepseek-v4.1-flash`) via
 l'inférence OpenCode. Aucun modèle DeepSeek n'est fourni par défaut par
 Langfuse : il faut donc créer la définition de prix.
 
@@ -31,7 +31,7 @@ pnpm langfuse:sync-model
 Le script `scripts/sync-langfuse-model.mjs` :
 
 1. lit `https://models.dev/api.json`, le catalogue utilisé par OpenCode ;
-2. récupère le modèle `opencode/$AI_MODEL_NAME` ;
+2. récupère le modèle `opencode/$AI_MODEL` ;
 3. crée ou remplace la définition de modèle dans Langfuse avec les prix par
    token (`input`, `output`, `input_cache_read`, `output_reasoning`).
 

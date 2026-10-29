@@ -95,7 +95,9 @@ export function SignUpForm({ linkError }: { linkError: boolean }) {
               />
             </Field>
             <Field>
-              <Button type="submit">Inscription</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                Inscription
+              </Button>
               <FieldDescription className="text-center">
                 Vous avez un compte ? <a href="/auth">Inscription</a>
               </FieldDescription>

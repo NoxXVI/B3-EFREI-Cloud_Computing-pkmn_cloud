@@ -4,10 +4,10 @@ import { Redis } from "@upstash/redis";
 
 export const redis = Redis.fromEnv();
 
-export const QUOTA_GENERATIONS = 5;
+export const CHAT_QUOTA_PER_HOUR = 10;
 
-export const generationsLimiter = new Ratelimit({
+export const chatLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(QUOTA_GENERATIONS, "1 h"),
-  prefix: "fiches:generations",
+  limiter: Ratelimit.slidingWindow(CHAT_QUOTA_PER_HOUR, "1 h"),
+  prefix: "pkmn:chat",
 });

@@ -1,9 +1,12 @@
 import { after } from "next/server";
 import * as z from "zod";
 
+import { CHAT_QUOTA_PER_HOUR, chatLimiter } from "@/lib/cache";
 import { runChatAgent } from "@/lib/ia";
-import { flushLangfuse, isLangfuseEnabled } from "@/lib/langfuse";
+import { flushLangfuse } from "@/lib/langfuse";
 import { createClientServer } from "@/lib/supabase/server";
+
+export const maxDuration = 60;
 
 const requestSchema = z.object({
   messages: z
@@ -23,10 +26,28 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  if (!process.env.AI_API_KEY) {
+  let user;
+
+  try {
+    const supabase = await createClientServer();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (error) {
+    console.error(
+      "Impossible de vérifier la session pour l'assistant :",
+      error instanceof Error ? error.message : error,
+    );
+
     return Response.json(
-      { error: "L'assistant n'est pas configuré : AI_API_KEY est manquante." },
-      { status: 503 },
+      { error: "Impossible de vérifier votre session. Reconnectez-vous." },
+      { status: 500 },
+    );
+  }
+
+  if (!user) {
+    return Response.json(
+      { error: "Connectez-vous pour utiliser l'assistant." },
+      { status: 401 },
     );
   }
 
@@ -47,23 +68,45 @@ export async function POST(request: Request) {
     return Response.json({ error: "Requête invalide." }, { status: 400 });
   }
 
-  const sessionId =
-    request.headers.get("x-chat-session")?.slice(0, 128) || "pkmn-cloud";
+  try {
+    const { success, reset } = await chatLimiter.limit(user.id);
 
-  let userId: string | undefined;
+    if (!success) {
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((reset - Date.now()) / 1000),
+      );
+      const minutes = Math.ceil(retryAfterSeconds / 60);
 
-  if (isLangfuseEnabled()) {
-    try {
-      const supabase = await createClientServer();
-      const { data } = await supabase.auth.getUser();
-      userId = data.user?.id;
-    } catch (error) {
-      console.error(
-        "Impossible de récupérer l'utilisateur pour Langfuse :",
-        error instanceof Error ? error.message : error,
+      return Response.json(
+        {
+          error: `Quota atteint : ${CHAT_QUOTA_PER_HOUR} messages par heure. Réessayez dans ${minutes} min.`,
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retryAfterSeconds) },
+        },
       );
     }
+  } catch (error) {
+    // Le chat reste utilisable si le quota est momentanément indisponible.
+    console.error(
+      "Vérification du quota impossible :",
+      error instanceof Error ? error.message : error,
+    );
   }
+
+  if (!process.env.AI_API_KEY) {
+    console.error("AI_API_KEY est absente : assistant désactivé.");
+
+    return Response.json(
+      { error: "L'assistant est indisponible pour le moment." },
+      { status: 503 },
+    );
+  }
+
+  const sessionId =
+    request.headers.get("x-chat-session")?.slice(0, 128) || "pkmn-cloud";
 
   after(flushLangfuse);
 
@@ -71,7 +114,7 @@ export async function POST(request: Request) {
     const { reply, filters } = await runChatAgent(
       parsed.data.messages,
       parsed.data.filters,
-      { sessionId, userId },
+      { sessionId, userId: user.id },
     );
 
     return Response.json({ reply, filters });

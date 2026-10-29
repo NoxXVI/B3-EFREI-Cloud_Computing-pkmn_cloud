@@ -1,7 +1,6 @@
 "use client";
 
 import { useChecklists } from "@/hooks/checklists";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   RiAddLargeLine,
   RiErrorWarningLine,
@@ -39,7 +38,7 @@ export default function Home() {
           <Empty>
             <EmptyHeader>
               <RiLoader4Line className="animate-spin" />
-              <EmptyTitle>Chargment</EmptyTitle>
+              <EmptyTitle>Chargement</EmptyTitle>
               <EmptyDescription>
                 2 secondes, ça ne devrait pas être long...
               </EmptyDescription>
@@ -50,7 +49,7 @@ export default function Home() {
           <Alert variant="destructive">
             <RiErrorWarningLine />
             <AlertTitle>
-              Nous n&apos;avons pas pu charger vos checklist
+              Nous n&apos;avons pas pu charger vos checklists
             </AlertTitle>
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>

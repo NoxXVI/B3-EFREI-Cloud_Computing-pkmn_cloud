@@ -25,8 +25,6 @@ import { usePokemonDetail } from "@/hooks/pokemon";
 import {
   typeColor,
   describeCondition,
-  formatWeight,
-  formatHeight,
   label,
   conditionLabel,
   genderLabel,
@@ -35,7 +33,6 @@ import {
   GROWTH_LABELS,
   EGG_GROUP_LABELS,
   HABITAT_LABELS,
-  STAT_LABELS,
   obtainSentence,
   spriteUrl,
 } from "@/lib/pokemon-labels";

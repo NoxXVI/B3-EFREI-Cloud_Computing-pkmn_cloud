@@ -84,7 +84,9 @@ export function LogInForm({ linkError }: { linkError: boolean }) {
               />
             </Field>
             <Field>
-              <Button type="submit">Connexion</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                Connexion
+              </Button>
               <FieldDescription className="text-center">
                 Pas de compte ? <a href="/auth/signup">Inscription</a>
               </FieldDescription>
