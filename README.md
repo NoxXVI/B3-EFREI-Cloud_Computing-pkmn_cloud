@@ -1,26 +1,24 @@
 # Pokémon Cloud
 
-Application de suivi de Pokédex : chaque utilisateur crée des checklists par
-jeu, coche les Pokémon capturés et peut piloter les filtres du tableau avec un
-assistant IA.
+Pokémon Cloud aide à suivre un Pokédex. Chaque utilisateur crée des checklists
+par jeu, coche les Pokémon capturés et peut demander à un assistant d'appliquer
+des filtres au tableau.
 
 ## Présentation
 
-L'application s'adresse aux joueurs qui veulent suivre leur progression sur
-plusieurs jeux Pokémon sans tenir de tableur. Une checklist est rattachée à un
-jeu (Pokémon Rouge, Saphir, Diamant, Noir 2, etc.) et reprend le Pokédex régional ou national
-correspondant.
+L'application s'adresse aux joueurs qui suivent plusieurs jeux sans tenir de
+tableur. Une checklist est rattachée à un jeu (Pokémon Rouge, Saphir, Diamant,
+Noir 2, etc.) et affiche le Pokédex régional ou national de ce jeu.
 
-Fonctionnalités principales :
+Fonctionnalités :
 
-- inscription et connexion par e-mail / mot de passe via Supabase Auth ;
+- inscription et connexion par e-mail et mot de passe ;
 - création de checklists par jeu ;
-- recherche, filtre par état de capture (capturé, non capturé, absent) et
+- recherche, filtre par état (capturé, non capturé, absent de la checklist) et
   bascule entre Pokédex régional et national ;
-- fiche Pokémon : types, évolutions, conditions d'obtention, rencontres ;
-- assistant IA qui applique les filtres du tableau à partir d'une demande en
-  langage naturel ;
-- panneau `/admin` réservé aux administrateurs, avec l'état des services.
+- fiche Pokémon avec types, évolutions et rencontres ;
+- assistant qui traduit une demande en langage naturel en filtres du tableau ;
+- panneau `/admin`, réservé aux administrateurs, qui affiche l'état des services.
 
 ## Adresse de production
 
@@ -28,83 +26,113 @@ https://b3-efrei-cloud-computing-pkmn-cloud.vercel.app/
 
 ## Architecture
 
+Le navigateur n'appelle Supabase directement que pour la connexion, l'inscription et
+la déconnexion. Les checklists, les Pokédex et l'assistant passent par les routes
+`/api/...` de Next.js. Ces routes vérifient la session, consultent Supabase ou
+PokéAPI, puis répondent. Les clés restent ainsi côté serveur, et le quota et le
+cache s'appliquent avant chaque appel externe.
+
+Une demande à l'assistant suit le même chemin. `/api/chat` vérifie la session,
+décompte le quota de l'utilisateur, puis lance l'agent LangChain. L'agent peut
+appeler l'outil `apply_filters`. La route renvoie une réponse texte et un patch
+de filtres, et c'est le tableau qui applique ce patch.
+
 | Service | Rôle |
 | --- | --- |
-| Next.js 16 (App Router) sur Vercel | Interface, routes API, proxy d'authentification |
-| Supabase Auth | Inscription, connexion, session par cookies |
-| Supabase Postgres + RLS | Checklists et Pokémon capturés, isolés par utilisateur |
-| Upstash Redis | Cache des Pokédex et des noms français, quota de l'assistant |
-| OpenCode Inference (API compatible OpenAI) | Modèle de langage de l'assistant |
+| Next.js 16 (App Router) sur Vercel | Pages, routes API et proxy qui rafraîchit la session |
+| Supabase Auth | Inscription, connexion et cookies de session |
+| Supabase Postgres | Checklists et Pokémon capturés, protégés par RLS |
+| Upstash Redis | Cache des Pokédex et des checklists, compteur du quota de l'assistant |
+| OpenCode (API compatible OpenAI) | Modèle de langage de l'assistant |
 | LangChain | Agent et outil `apply_filters` |
-| Langfuse | Traces des appels IA : tokens, latence, coût |
-| UptimeRobot | Surveillance externe de `/api/health` et page de statut publique |
-| PokéAPI + CSV PokeAPI | Données Pokémon et noms français |
+| Langfuse | Traces des appels à l'IA |
+| UptimeRobot | Surveillance de `/api/health` et page de statut |
+| PokéAPI | Données Pokémon ; les noms français viennent du CSV du dépôt PokeAPI |
 
-Les appels à PokeAPI et au modèle d'IA passent uniquement par le serveur. Le
-navigateur ne reçoit que les données nécessaires à l'affichage.
+Le cache Redis garde les Pokédex et les fiches Pokémon sept jours, les
+checklists soixante secondes, et les noms français sans expiration.
 
 ### Briques au choix
 
-**Langfuse — observabilité de l'IA.** Chaque requête `/api/chat` produit une
-trace Langfuse avec la génération, les tokens et le coût estimé. La brique est
-pertinente parce que l'assistant est la fonctionnalité la plus coûteuse de
-l'application : sans suivi, une dérive de consommation passerait inaperçue. Le
-prix du modèle se synchronise avec `pnpm langfuse:sync-model`, et le détail de
-la configuration figure dans `docs/langfuse.md`.
+**Langfuse** trace chaque appel à l'assistant : génération, tokens et coût
+estimé. L'assistant est la fonction la plus coûteuse de l'application, donc
+c'est là qu'une dérive de consommation doit se voir. Le prix du modèle se
+synchronise avec `pnpm langfuse:sync-model`. La configuration détaillée est
+dans `docs/langfuse.md`.
 
-**UptimeRobot — surveillance externe.** La route publique `/api/health`
-répond sans toucher à la base ni exposer de secret. Un monitor UptimeRobot la
-vérifie à intervalle régulier et une page de statut publique rend l'état
-visible hors de l'application. Le panneau `/admin` interroge l'API v2 en
-lecture seule et signale tout monitor en panne. La brique est pertinente pour
-une application déployée : elle détecte une indisponibilité Vercel ou Supabase
-sans attendre qu'un utilisateur la signale.
-
-La page de statut publique est accessible à l'adresse
-https://stats.uptimerobot.com/48vgyRuscX.
+**UptimeRobot** surveille la route publique `/api/health`, qui ne touche ni à la
+base ni à aucun secret. Une page de statut publique affiche cet état hors de
+l'application : https://stats.uptimerobot.com/48vgyRuscX. Le panneau `/admin`
+interroge l'API v2 en lecture seule et signale tout monitor en panne. Une
+indisponibilité de Vercel ou de Supabase se voit ainsi sans attendre qu'un
+utilisateur la signale.
 
 ## Modèle d'IA
 
-Fournisseur : OpenCode, via son inférence compatible OpenAI
-(`https://opencode.ai/inference/go/openai/v1` par défaut). Modèle :
-`deepseek-v4.1-flash`. Les deux valeurs se configurent avec `AI_BASE_URL` et
-`AI_MODEL`, et la clé avec `AI_API_KEY`.
+Le fournisseur est OpenCode, via son inférence compatible OpenAI. Le modèle par
+défaut est `deepseek-v4.1-flash`. L'endpoint, le modèle et la clé se règlent
+avec les variables listées plus bas.
 
-L'appel se fait côté serveur, dans `src/lib/ia.ts`, avec LangChain. Le choix
-du modèle tient à l'usage : l'agent ne dispose que de l'outil `apply_filters`
-et n'a pas accès aux données Pokémon. Un modèle léger suffit donc pour
-traduire une demande en filtres, ce que la prod confirme (le filtre est bien
-appliqué). Le prompt demande à l'agent de ne pas inventer de données.
+L'appel se fait côté serveur, dans `src/lib/ia.ts`, avec LangChain. Le modèle
+ne fait qu'une chose : traduire une demande en filtres. Son seul outil est
+`apply_filters`, et il n'a pas accès aux données Pokémon. Un modèle léger suffit
+donc à cette tâche, ce que confirme le fonctionnement en production. Le prompt
+lui demande de ne pas inventer de données.
 
 ## Structure de données
 
-Deux tables, reliées par une clé étrangère et protégées par RLS :
+Le schéma compte deux tables. Elles sont versionnées dans
+`supabase/migrations/`.
 
-```text
-auth.users
-   │ 1
-   │
-   │ N
-checklists (id, user_id, name, game_key, revision, created_at, updated_at)
-   │ 1
-   │
-   │ N
-checklist_pokemon (checklist_id, user_id, pokemon_api_id, is_captured, updated_at)
-```
+### Tables
 
-- `checklists.user_id` référence `auth.users(id)`; `checklist_pokemon.user_id`
-  est relié au propriétaire par la clé étrangère composite vers
-  `checklists(id, user_id)`.
-- La clé étrangère composite `(checklist_id, user_id)` garantit qu'une ligne
-  Pokémon appartient bien au propriétaire de la checklist.
-- RLS est activée sur les deux tables. Les policies `select`, `insert`,
-  `update` et `delete` comparent `user_id` à `auth.uid()`.
-- Le client service role n'est utilisé que côté serveur, dans `/admin`, et
-  contourne RLS par nature ; il n'est jamais exposé au navigateur.
+`checklists` regroupe les checklists d'un utilisateur.
 
-Le schéma complet est versionné dans `supabase/migrations/0001_init.sql`. La
-migration `0002_checklist_pokemon_user_id.sql` met à niveau une base créée
-avant l'ajout de `user_id` sur `checklist_pokemon`.
+| Champ | Rôle |
+| --- | --- |
+| `id` | Identifiant UUID de la checklist |
+| `user_id` | Propriétaire, référence `auth.users` |
+| `name` | Nom saisi par l'utilisateur |
+| `game_key` | Identifiant PokéAPI du jeu, par exemple `red` |
+| `revision` | Compteur de version, initialisé à 1 et non incrémenté pour l'instant |
+| `created_at`, `updated_at` | Dates de création et de dernière modification |
+
+`checklist_pokemon` contient les Pokémon d'une checklist. Il n'y a qu'une ligne
+par Pokémon et par checklist. Un Pokémon sans ligne est « absent de la
+checklist » : c'est le sens du filtre « Absents ».
+
+| Champ | Rôle |
+| --- | --- |
+| `checklist_id` | Checklist concernée |
+| `user_id` | Propriétaire, identique à celui de la checklist |
+| `pokemon_api_id` | Numéro national du Pokémon |
+| `is_captured` | `true` si capturé, `false` si présent mais non capturé |
+| `updated_at` | Dernière modification de la ligne |
+
+### Relations
+
+Un utilisateur possède plusieurs checklists, et une checklist contient plusieurs
+lignes de `checklist_pokemon`. La clé primaire de cette dernière table est
+`(checklist_id, pokemon_api_id)`, ce qui interdit les doublons.
+
+La clé étrangère composite `(checklist_id, user_id)` vers `checklists(id,
+user_id)` impose que la ligne ait le même propriétaire que sa checklist. Une
+insertion sur la checklist d'un autre utilisateur est donc refusée, même si
+l'application était contournée.
+
+### Règles de sécurité
+
+- La RLS est activée sur les deux tables. Les policies `select`, `insert`,
+  `update` et `delete` n'autorisent que les lignes dont `user_id` vaut
+  `auth.uid()`.
+- Le rôle `anon` n'a aucun droit sur les tables. Le rôle `authenticated` n'a
+  que les droits nécessaires, bornés par la RLS.
+- La clé service role contourne la RLS. Elle n'est utilisée que côté serveur,
+  dans les contrôles de `/admin`, et n'est jamais exposée au navigateur.
+
+Ces règles ont été vérifiées avec deux comptes : un second utilisateur ne voit
+aucune ligne du premier, et une insertion sur la checklist du premier est
+refusée.
 
 ## Lancer le projet en local
 
@@ -118,12 +146,13 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Appliquer le schéma dans le SQL Editor Supabase :
+Le schéma se crée une seule fois dans le SQL Editor Supabase :
 
-- base neuve : `supabase/migrations/0001_init.sql` ;
-- base existante : `supabase/migrations/0002_checklist_pokemon_user_id.sql`.
+- sur une base neuve, exécuter `supabase/migrations/0001_init.sql` ;
+- sur une base créée avant l'ajout de `user_id` sur `checklist_pokemon`,
+  exécuter `supabase/migrations/0002_checklist_pokemon_user_id.sql`.
 
-Pour accéder à `/admin`, attribuer le rôle admin au compte :
+Pour accéder à `/admin`, il faut ensuite attribuer le rôle admin à un compte :
 
 ```sql
 update auth.users
@@ -131,6 +160,25 @@ set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
   || '{"role":"admin"}'::jsonb
 where email = 'admin@example.com';
 ```
+
+### Variables d'environnement
+
+Le fichier `.env.example` liste toutes les variables, sans valeur.
+
+| Variable | Rôle | Exposée au navigateur |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL du projet Supabase | Oui |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clé publique, protégée par la RLS | Oui |
+| `SUPABASE_SECRET_KEY` | Clé service role, contourne la RLS | Non |
+| `AI_BASE_URL` | Endpoint compatible OpenAI | Non |
+| `AI_API_KEY` | Clé du fournisseur IA | Non |
+| `AI_MODEL` | Modèle appelé par l'assistant | Non |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Cache et quotas | Non |
+| `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` | Traces de l'IA | Non |
+| `UPTIMEROBOT_API_KEY` | Lecture des monitors dans `/admin`, clé en lecture seule | Non |
+| `ALLOWED_DEV_ORIGINS` | Hôtes autorisés à charger le serveur de développement | Non |
+
+Les anciens noms `AI_PROVIDER_URL` et `AI_MODEL_NAME` restent acceptés.
 
 Commandes utiles :
 
@@ -140,21 +188,18 @@ pnpm build
 pnpm langfuse:sync-model   # synchronise le prix du modèle dans Langfuse
 ```
 
-Variables d'environnement : voir `.env.example`. Les clés `SUPABASE_SECRET_KEY`,
-`AI_API_KEY`, `UPSTASH_REDIS_REST_TOKEN` et `LANGFUSE_SECRET_KEY` restent
-strictement côté serveur.
-
 ## Limites et améliorations possibles
 
 - Pas de tests automatisés ni de CI.
-- Le CSV des noms français (raw.githubusercontent.com) ne figure pas dans
-  `/admin` : seules ses erreurs remontent à l'utilisateur.
 - Les checklists ne sont pas partageables entre utilisateurs.
-- Pas encore de renommage ni de suppression de checklist depuis l'interface.
-- Le Pokédex est chargé en entier puis filtré côté client ; une pagination
-  serait nécessaire pour des listes plus grandes.
+- Pas de renommage ni de suppression de checklist depuis l'interface.
+- `revision` est prévue pour suivre les versions d'une checklist, mais n'est pas
+  encore mise à jour.
+- Le Pokédex est chargé en entier puis filtré côté client. Une pagination serait
+  nécessaire pour des listes plus longues.
 - L'assistant n'a pas de streaming et se limite à 10 messages par heure et par
   utilisateur.
-- Les données viennent de PokeAPI et du dépôt PokeAPI : une indisponibilité de
-  ces sources dégrade le premier chargement, avant que le cache Redis ne prenne
-  le relais.
+- Le CSV des noms français n'est pas contrôlé dans `/admin` ; seules ses erreurs
+  remontent à l'utilisateur.
+- Une indisponibilité de PokéAPI dégrade le premier chargement d'un Pokédex,
+  avant que le cache Redis ne prenne le relais.
