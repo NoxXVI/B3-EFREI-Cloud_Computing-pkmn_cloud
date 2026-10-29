@@ -167,9 +167,9 @@ Deux configurations fonctionnent.
 Sans confirmation : dans Supabase, ouvrir Authentication → Providers → Email
 et désactiver « Confirm email ». L'inscription ouvre alors une session et le
 formulaire redirige directement vers l'accueil. C'est la configuration la plus
-simple, et la seule praticable sur un nouveau projet gratuit : depuis juin 2026,
-les nouveaux projets gratuits qui utilisent le fournisseur d'e-mail par défaut
-ne peuvent plus modifier les templates.
+simple, et la seule sans SMTP personnalisé sur un nouveau projet gratuit :
+depuis juin 2026, les nouveaux projets gratuits qui utilisent le fournisseur
+d'e-mail par défaut ne peuvent plus modifier les templates.
 
 Avec confirmation : configurer un SMTP personnalisé, puis ouvrir
 Authentication → Emails → Confirm signup et remplacer le lien par :

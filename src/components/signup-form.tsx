@@ -37,7 +37,7 @@ export function SignUpForm({ linkError }: { linkError: boolean }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
 
     setIsSubmitting(false);
