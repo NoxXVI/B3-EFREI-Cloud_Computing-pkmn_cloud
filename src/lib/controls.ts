@@ -190,6 +190,22 @@ const uptimeRobotControl: Control = {
   },
 };
 
+const pokeApiControl: Control = {
+  service: "PokeAPI",
+  description: "Données Pokémon des fiches et des Pokédex",
+  verify: async () => {
+    const response = await fetch("https://pokeapi.co/api/v2/pokemon/1", {
+      signal: AbortSignal.timeout(4500),
+    });
+
+    if (!response.ok) {
+      throw new Error(`PokeAPI répond ${response.status}.`);
+    }
+
+    return "Données Pokémon joignables";
+  },
+};
+
 export const CONTROLS: Control[] = [
   databaseControl,
   authControl,
@@ -197,4 +213,5 @@ export const CONTROLS: Control[] = [
   aiControl,
   langfuseControl,
   uptimeRobotControl,
+  pokeApiControl,
 ];

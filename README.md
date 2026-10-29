@@ -147,8 +147,8 @@ strictement côté serveur.
 ## Limites et améliorations possibles
 
 - Pas de tests automatisés ni de CI.
-- Les services externes PokeAPI et le CSV des noms français ne figurent pas
-  dans `/admin` : seules leurs erreurs remontent à l'utilisateur.
+- Le CSV des noms français (raw.githubusercontent.com) ne figure pas dans
+  `/admin` : seules ses erreurs remontent à l'utilisateur.
 - Les checklists ne sont pas partageables entre utilisateurs.
 - Pas encore de renommage ni de suppression de checklist depuis l'interface.
 - Le Pokédex est chargé en entier puis filtré côté client ; une pagination
