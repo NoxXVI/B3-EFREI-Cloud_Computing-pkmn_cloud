@@ -8,7 +8,7 @@ assistant IA.
 
 L'application s'adresse aux joueurs qui veulent suivre leur progression sur
 plusieurs jeux Pokémon sans tenir de tableur. Une checklist est rattachée à un
-jeu (Pokémon Rouge, Écarlate, etc.) et reprend le Pokédex régional ou national
+jeu (Pokémon Rouge, Saphir, Diamant, Noir 2, etc.) et reprend le Pokédex régional ou national
 correspondant.
 
 Fonctionnalités principales :
@@ -49,12 +49,12 @@ navigateur ne reçoit que les données nécessaires à l'affichage.
 trace Langfuse avec la génération, les tokens et le coût estimé. La brique est
 pertinente parce que l'assistant est la fonctionnalité la plus coûteuse de
 l'application : sans suivi, une dérive de consommation passerait inaperçue. Le
-prix du modèle est synchronisé depuis le catalogue `models.dev` avec
-`pnpm langfuse:sync-model`.
+prix du modèle se synchronise avec `pnpm langfuse:sync-model`, et le détail de
+la configuration figure dans `docs/langfuse.md`.
 
 **UptimeRobot — surveillance externe.** La route publique `/api/health`
 répond sans toucher à la base ni exposer de secret. Un monitor UptimeRobot la
-vérifie toutes les cinq minutes et une page de statut publique rend l'état
+vérifie à intervalle régulier et une page de statut publique rend l'état
 visible hors de l'application. Le panneau `/admin` interroge l'API v2 en
 lecture seule et signale tout monitor en panne. La brique est pertinente pour
 une application déployée : elle détecte une indisponibilité Vercel ou Supabase
@@ -65,12 +65,16 @@ https://stats.uptimerobot.com/48vgyRuscX.
 
 ## Modèle d'IA
 
-Le modèle est appelé côté serveur dans `src/lib/ia.ts`, via une API compatible
-OpenAI configurée par `AI_BASE_URL`, `AI_API_KEY` et `AI_MODEL`. Le choix par
-défaut est `deepseek-v4.1-flash` : rapide et économique, avec un support correct
-du tool calling, ce qui suffit pour appliquer des filtres. L'agent ne répond
-pas aux questions sur les données Pokémon : il ne peut qu'appeler l'outil
-`apply_filters`, ce qui limite les hallucinations et la surface d'action.
+Fournisseur : OpenCode, via son inférence compatible OpenAI
+(`https://opencode.ai/inference/go/openai/v1` par défaut). Modèle :
+`deepseek-v4.1-flash`. Les deux valeurs se configurent avec `AI_BASE_URL` et
+`AI_MODEL`, et la clé avec `AI_API_KEY`.
+
+L'appel se fait côté serveur, dans `src/lib/ia.ts`, avec LangChain. Le choix
+du modèle tient à l'usage : l'agent ne dispose que de l'outil `apply_filters`
+et n'a pas accès aux données Pokémon. Un modèle léger suffit donc pour
+traduire une demande en filtres, ce que la prod confirme (le filtre est bien
+appliqué). Le prompt demande à l'agent de ne pas inventer de données.
 
 ## Structure de données
 
@@ -104,8 +108,8 @@ avant l'ajout de `user_id` sur `checklist_pokemon`.
 
 ## Lancer le projet en local
 
-Prérequis : Node.js 20+, pnpm, un projet Supabase, une base Upstash Redis et une
-clé d'API pour le modèle.
+Prérequis : Node.js 20.9 ou plus (exigence de Next.js 16), pnpm, un projet
+Supabase, une base Upstash Redis et une clé d'API pour le modèle.
 
 ```bash
 pnpm install
@@ -143,6 +147,8 @@ strictement côté serveur.
 ## Limites et améliorations possibles
 
 - Pas de tests automatisés ni de CI.
+- Les services externes PokeAPI et le CSV des noms français ne figurent pas
+  dans `/admin` : seules leurs erreurs remontent à l'utilisateur.
 - Les checklists ne sont pas partageables entre utilisateurs.
 - Pas encore de renommage ni de suppression de checklist depuis l'interface.
 - Le Pokédex est chargé en entier puis filtré côté client ; une pagination
