@@ -15,7 +15,7 @@ export type Control = {
 };
 
 const MAX_DELAY_DURATION_MS = 5000;
-const DEGRADATION_THRESHOLD_MS = 2000;
+const DEGRADATION_THRESHOLD_MS = 3000;
 
 export async function executeControlCheck(
   control: Control,
