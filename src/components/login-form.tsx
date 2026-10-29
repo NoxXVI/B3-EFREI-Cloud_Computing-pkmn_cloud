@@ -22,7 +22,7 @@ export function LogInForm({ linkError }: { linkError: boolean }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(
     linkError
-      ? "Ce lien de connexion est invalide ou a expiré. Demandez-en un nouveau."
+      ? "Ce lien est invalide, expiré, ou ouvert dans un autre navigateur. Demandez un nouveau lien et ouvrez-le dans le même navigateur que l'inscription."
       : "",
   );
 

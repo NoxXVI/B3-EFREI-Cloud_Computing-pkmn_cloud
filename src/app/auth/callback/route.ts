@@ -13,7 +13,13 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/`);
     }
 
-    console.error("Échec de l'échange du code de connexion :", error);
+    console.error("Échec de l'échange du code de connexion :", error.message);
+
+    if (error.code === "pkce_code_verifier_not_found") {
+      return NextResponse.redirect(
+        `${origin}/auth/signup?erreur=lien-invalide`,
+      );
+    }
   }
 
   return NextResponse.redirect(`${origin}/auth/signup?erreur=lien-invalide`);

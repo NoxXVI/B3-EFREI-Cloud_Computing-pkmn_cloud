@@ -152,6 +152,23 @@ Le schéma se crée une seule fois dans le SQL Editor Supabase :
 - sur une base créée avant l'ajout de `user_id` sur `checklist_pokemon`,
   exécuter `supabase/migrations/0002_checklist_pokemon_user_id.sql`.
 
+### Confirmation d'e-mail
+
+Le lien de confirmation doit utiliser le token hash plutôt que le flux PKCE par
+défaut. Dans Supabase, ouvrir Authentication → Email Templates → Confirm signup
+et remplacer le lien par :
+
+```html
+<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup">
+  Confirmer mon adresse
+</a>
+```
+
+`Site URL` doit pointer vers l'adresse de l'application (localhost en local,
+URL Vercel en production). Sans ce réglage, le lien par défaut passe par
+`/auth/callback` et exige d'être ouvert dans le navigateur qui a lancé
+l'inscription ; sinon Supabase répond `pkce_code_verifier_not_found`.
+
 Pour accéder à `/admin`, il faut ensuite attribuer le rôle admin à un compte :
 
 ```sql

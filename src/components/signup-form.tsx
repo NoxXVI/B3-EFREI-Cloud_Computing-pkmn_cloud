@@ -22,7 +22,7 @@ export function SignUpForm({ linkError }: { linkError: boolean }) {
   const [isSent, setIsSent] = useState(false);
   const [error, setError] = useState(
     linkError
-      ? "Ce lien de connexion est invalide ou a expiré. Demandez-en un nouveau."
+      ? "Ce lien est invalide, expiré, ou ouvert dans un autre navigateur. Demandez un nouveau lien et ouvrez-le dans le même navigateur que l'inscription."
       : "",
   );
 
@@ -57,8 +57,9 @@ export function SignUpForm({ linkError }: { linkError: boolean }) {
         <RiErrorWarningLine />
         <AlertTitle>Email de confirmation</AlertTitle>
         <AlertDescription>
-          Un lien de connexion vient d&apos;être envoyé à{" "}
-          <strong>{email}</strong>. Ouvrez-le dans ce même navigateur.
+          Un e-mail de confirmation vient d&apos;être envoyé à{" "}
+          <strong>{email}</strong>. Ouvrez le lien qu&apos;il contient pour
+          activer votre compte.
         </AlertDescription>
       </Alert>
     );
