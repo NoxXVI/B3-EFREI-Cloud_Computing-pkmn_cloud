@@ -73,7 +73,7 @@ utilisateur la signale.
 ## Modèle d'IA
 
 Le fournisseur est OpenCode, via son inférence compatible OpenAI. Le modèle par
-défaut est `deepseek-v4.1-flash`. L'endpoint, le modèle et la clé se règlent
+défaut est `deepseek-v4.1-flash` (gratuit). L'endpoint, le modèle et la clé se règlent
 avec les variables listées plus bas.
 
 L'appel se fait côté serveur, dans `src/lib/ia.ts`, avec LangChain. Le modèle
