@@ -184,6 +184,7 @@ export function ChecklistPokemonTable({
         <Input
           name="search"
           type="search"
+          aria-label="Rechercher un Pokémon"
           placeholder="Rechercher un Pokémon"
           value={search}
           onChange={(event) => setSearch(event.target.value)}

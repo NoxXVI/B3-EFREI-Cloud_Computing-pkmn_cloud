@@ -8,14 +8,16 @@ des filtres au tableau.
 
 L'application s'adresse aux joueurs qui suivent plusieurs jeux sans tenir de
 tableur. Une checklist est rattachée à un jeu (Pokémon Rouge, Saphir, Diamant,
-Noir 2, etc.) et affiche le Pokédex régional ou national de ce jeu.
+Noir 2, etc.) et affiche le Pokédex régional, ou national jusqu'à la génération
+du jeu.
 
 Fonctionnalités :
 
 - inscription et connexion par e-mail et mot de passe ;
 - création de checklists par jeu ;
 - recherche, filtre par état (capturé, non capturé, absent de la checklist) et
-  bascule entre Pokédex régional et national ;
+  bascule entre Pokédex régional et national, ce dernier étant limité à la
+  génération du jeu ;
 - fiche Pokémon avec types, évolutions et rencontres ;
 - assistant qui traduit une demande en langage naturel en filtres du tableau ;
 - panneau `/admin`, réservé aux administrateurs, qui affiche l'état des services.
@@ -29,11 +31,13 @@ https://b3-efrei-cloud-computing-pkmn-cloud.vercel.app/
 
 ## Architecture
 
-Le navigateur n'appelle Supabase directement que pour la connexion, l'inscription et
-la déconnexion. Les checklists, les Pokédex et l'assistant passent par les routes
-`/api/...` de Next.js. Ces routes vérifient la session, consultent Supabase ou
-PokéAPI, puis répondent. Les clés restent ainsi côté serveur, et le quota et le
-cache s'appliquent avant chaque appel externe.
+Le navigateur n'appelle Supabase directement que pour la connexion, l'inscription
+et la déconnexion. Les checklists, les Pokédex et l'assistant passent par les
+routes `/api/...` de Next.js. Les routes qui manipulent des données utilisateur
+vérifient la session ; les routes Pokédex et `/api/health` sont publiques et en
+lecture seule. Les clés sensibles restent côté serveur : seule la clé publique
+Supabase est exposée au navigateur, et la RLS protège les données. Le quota
+s'applique avant l'appel au modèle, et le cache devant PokéAPI.
 
 Une demande à l'assistant suit le même chemin. `/api/chat` vérifie la session,
 décompte le quota de l'utilisateur, puis lance l'agent LangChain. L'agent peut
@@ -46,7 +50,7 @@ de filtres, et c'est le tableau qui applique ce patch.
 | Supabase Auth | Inscription, connexion et cookies de session |
 | Supabase Postgres | Checklists et Pokémon capturés, protégés par RLS |
 | Upstash Redis | Cache des Pokédex et des checklists, compteur du quota de l'assistant |
-| OpenCode (API compatible OpenAI) | Modèle de langage de l'assistant |
+| Fournisseur compatible OpenAI (OpenCode par défaut) | Modèle de langage de l'assistant |
 | LangChain | Agent et outil `apply_filters` |
 | Langfuse | Traces des appels à l'IA |
 | UptimeRobot | Surveillance de `/api/health` et page de statut |
@@ -57,30 +61,31 @@ checklists soixante secondes, et les noms français sans expiration.
 
 ### Briques au choix
 
-**Langfuse** trace chaque appel à l'assistant : génération, tokens et coût
-estimé. L'assistant est la fonction la plus coûteuse de l'application, donc
-c'est là qu'une dérive de consommation doit se voir. Le prix du modèle se
-synchronise avec `pnpm langfuse:sync-model`. La configuration détaillée est
-dans `docs/langfuse.md`.
+**Langfuse** trace chaque appel à l'assistant lorsque les variables sont
+configurées : génération, tokens et coût estimé. L'assistant est la fonction la
+plus coûteuse de l'application, donc c'est là qu'une dérive de consommation doit
+se voir. Le prix du modèle se synchronise avec `pnpm langfuse:sync-model`. La
+configuration détaillée est dans `docs/langfuse.md`.
 
 **UptimeRobot** surveille la route publique `/api/health`, qui ne touche ni à la
 base ni à aucun secret. Une page de statut publique affiche cet état hors de
 l'application : https://stats.uptimerobot.com/48vgyRuscX. Le panneau `/admin`
-interroge l'API v2 en lecture seule et signale tout monitor en panne. Une
-indisponibilité de Vercel ou de Supabase se voit ainsi sans attendre qu'un
-utilisateur la signale.
+interroge l'API v2 en lecture seule et signale les monitors en panne. Une
+indisponibilité de l'application se voit ainsi sans attendre qu'un utilisateur
+la signale ; l'état de Supabase et des autres services est contrôlé séparément
+dans `/admin`.
 
 ## Modèle d'IA
 
 Le fournisseur est OpenCode, via son inférence compatible OpenAI. Le modèle par
-défaut est `deepseek-v4.1-flash` (gratuit). L'endpoint, le modèle et la clé se règlent
+défaut est `deepseek-v4.1-flash`. L'endpoint, le modèle et la clé se règlent
 avec les variables listées plus bas.
 
-L'appel se fait côté serveur, dans `src/lib/ia.ts`, avec LangChain. Le modèle
-ne fait qu'une chose : traduire une demande en filtres. Son seul outil est
-`apply_filters`, et il n'a pas accès aux données Pokémon. Un modèle léger suffit
-donc à cette tâche, ce que confirme le fonctionnement en production. Le prompt
-lui demande de ne pas inventer de données.
+L'appel se fait côté serveur, dans `src/lib/ia.ts`, avec LangChain. L'agent est
+chargé de traduire une demande en filtres ; son seul outil est `apply_filters`
+et il n'a pas accès aux données Pokémon. Le prompt lui demande de ne pas
+inventer de données. Un modèle léger suffit à cette tâche, ce que confirme le
+fonctionnement en production.
 
 ## Structure de données
 
@@ -163,7 +168,8 @@ Sans confirmation : dans Supabase, ouvrir Authentication → Providers → Email
 et désactiver « Confirm email ». L'inscription ouvre alors une session et le
 formulaire redirige directement vers l'accueil. C'est la configuration la plus
 simple, et la seule praticable sur un nouveau projet gratuit : depuis juin 2026,
-Supabase interdit la modification des templates d'e-mail sans SMTP personnalisé.
+les nouveaux projets gratuits qui utilisent le fournisseur d'e-mail par défaut
+ne peuvent plus modifier les templates.
 
 Avec confirmation : configurer un SMTP personnalisé, puis ouvrir
 Authentication → Emails → Confirm signup et remplacer le lien par :
@@ -221,8 +227,7 @@ pnpm langfuse:sync-model   # synchronise le prix du modèle dans Langfuse
 - Pas de tests automatisés ni de CI.
 - Les checklists ne sont pas partageables entre utilisateurs.
 - Pas de renommage ni de suppression de checklist depuis l'interface.
-- `revision` est prévue pour suivre les versions d'une checklist, mais n'est pas
-  encore mise à jour.
+- `revision` existe dans la table mais n'est pas encore utilisée.
 - Le Pokédex est chargé en entier puis filtré côté client. Une pagination serait
   nécessaire pour des listes plus longues.
 - L'assistant n'a pas de streaming et se limite à 10 messages par heure et par

@@ -1,3 +1,4 @@
+import { games } from "@/data/games";
 import { createChecklist, getChecklists } from "@/lib/checklist";
 
 export async function GET() {
@@ -42,8 +43,24 @@ export async function POST(request: Request) {
     );
   }
 
+  const trimmedName = name.trim();
+
+  if (trimmedName.length > 100) {
+    return Response.json(
+      { error: "Le nom de la checklist est limité à 100 caractères." },
+      { status: 400 },
+    );
+  }
+
+  if (!games.some((game) => game.pokeApiIdString === gameKey)) {
+    return Response.json({ error: "Jeu inconnu." }, { status: 400 });
+  }
+
   try {
-    const checklist = await createChecklist({ name: name.trim(), gameKey });
+    const checklist = await createChecklist({
+      name: trimmedName,
+      gameKey,
+    });
 
     if (!checklist) {
       return Response.json({ error: "Non authentifié." }, { status: 401 });
