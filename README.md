@@ -37,6 +37,7 @@ https://b3-efrei-cloud-computing-pkmn-cloud.vercel.app/
 | OpenCode Inference (API compatible OpenAI) | Modèle de langage de l'assistant |
 | LangChain | Agent et outil `apply_filters` |
 | Langfuse | Traces des appels IA : tokens, latence, coût |
+| UptimeRobot | Surveillance externe de `/api/health` et page de statut publique |
 | PokéAPI + CSV PokeAPI | Données Pokémon et noms français |
 
 Les appels à PokeAPI et au modèle d'IA passent uniquement par le serveur. Le
@@ -51,8 +52,15 @@ l'application : sans suivi, une dérive de consommation passerait inaperçue. Le
 prix du modèle est synchronisé depuis le catalogue `models.dev` avec
 `pnpm langfuse:sync-model`.
 
-La deuxième brique au choix est en cours d'ajout (surveillance externe
-UptimeRobot : route `/api/health`, monitor et page de statut publique).
+**UptimeRobot — surveillance externe.** La route publique `/api/health`
+répond sans toucher à la base ni exposer de secret. Un monitor UptimeRobot la
+vérifie toutes les cinq minutes et une page de statut publique rend l'état
+visible hors de l'application. Le panneau `/admin` interroge l'API v2 en
+lecture seule et signale tout monitor en panne. La brique est pertinente pour
+une application déployée : elle détecte une indisponibilité Vercel ou Supabase
+sans attendre qu'un utilisateur la signale.
+
+La page de statut publique est publiée depuis UptimeRobot (Status Pages).
 
 ## Modèle d'IA
 
@@ -133,7 +141,6 @@ strictement côté serveur.
 
 ## Limites et améliorations possibles
 
-- La deuxième brique au choix (UptimeRobot) reste à finaliser.
 - Pas de tests automatisés ni de CI.
 - Les checklists ne sont pas partageables entre utilisateurs.
 - Pas encore de renommage ni de suppression de checklist depuis l'interface.

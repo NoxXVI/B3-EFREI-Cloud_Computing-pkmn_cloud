@@ -124,10 +124,77 @@ const langfuseControl: Control = {
   },
 };
 
+const uptimeRobotControl: Control = {
+  service: "UptimeRobot",
+  description: "Surveillance externe de /api/health",
+  verify: async () => {
+    const apiKey = process.env.UPTIMEROBOT_API_KEY;
+
+    if (!apiKey) {
+      throw new Error("UPTIMEROBOT_API_KEY est absente.");
+    }
+
+    const response = await fetch(
+      "https://api.uptimerobot.com/v2/getMonitors",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          api_key: apiKey,
+          format: "json",
+          logs: "0",
+          response_times: "0",
+        }),
+        signal: AbortSignal.timeout(4500),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`UptimeRobot répond ${response.status}.`);
+    }
+
+    const data = (await response.json()) as {
+      stat?: string;
+      error?: { message?: string };
+      monitors?: { friendly_name: string; status: number }[];
+    };
+
+    if (data.stat !== "ok") {
+      throw new Error(
+        data.error?.message ?? "Réponse UptimeRobot invalide.",
+      );
+    }
+
+    const monitors = data.monitors ?? [];
+
+    if (monitors.length === 0) {
+      throw new Error("Aucun monitor configuré.");
+    }
+
+    // 8 = seems down, 9 = down.
+    const down = monitors.filter(
+      (monitor) => monitor.status === 8 || monitor.status === 9,
+    );
+
+    if (down.length > 0) {
+      throw new Error(
+        `${down.length} monitor(s) en panne : ${down
+          .map((monitor) => monitor.friendly_name)
+          .join(", ")}`,
+      );
+    }
+
+    return `${monitors.length} monitor(s) actif(s)`;
+  },
+};
+
 export const CONTROLS: Control[] = [
   databaseControl,
   authControl,
   cacheControl,
   aiControl,
   langfuseControl,
+  uptimeRobotControl,
 ];
