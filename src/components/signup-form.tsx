@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -20,6 +21,7 @@ export function SignUpForm({ linkError }: { linkError: boolean }) {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const router = useRouter();
   const [error, setError] = useState(
     linkError
       ? "Ce lien est invalide, expiré, ou ouvert dans un autre navigateur. Demandez un nouveau lien et ouvrez-le dans le même navigateur que l'inscription."
@@ -32,10 +34,10 @@ export function SignUpForm({ linkError }: { linkError: boolean }) {
     setError("");
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
     });
 
     setIsSubmitting(false);
@@ -43,8 +45,16 @@ export function SignUpForm({ linkError }: { linkError: boolean }) {
     if (error) {
       console.error(error);
       setError(
-        "L'envoi du lien a échoué. Patientez quelques minutes avant de réessayer.",
+        "L'inscription a échoué. Vérifiez vos informations ou patientez quelques minutes avant de réessayer.",
       );
+      return;
+    }
+
+    // Si la confirmation d'e-mail est désactivée dans Supabase, la session est
+    // créée immédiatement : on entre directement dans l'application.
+    if (data.session) {
+      router.push("/");
+      router.refresh();
       return;
     }
 

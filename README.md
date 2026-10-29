@@ -154,9 +154,16 @@ Le schéma se crée une seule fois dans le SQL Editor Supabase :
 
 ### Confirmation d'e-mail
 
-Le lien de confirmation doit utiliser le token hash plutôt que le flux PKCE par
-défaut. Dans Supabase, ouvrir Authentication → Email Templates → Confirm signup
-et remplacer le lien par :
+Deux configurations fonctionnent.
+
+Sans confirmation : dans Supabase, ouvrir Authentication → Providers → Email
+et désactiver « Confirm email ». L'inscription ouvre alors une session et le
+formulaire redirige directement vers l'accueil. C'est la configuration la plus
+simple, et la seule praticable sur un nouveau projet gratuit : depuis juin 2026,
+Supabase interdit la modification des templates d'e-mail sans SMTP personnalisé.
+
+Avec confirmation : configurer un SMTP personnalisé, puis ouvrir
+Authentication → Emails → Confirm signup et remplacer le lien par :
 
 ```html
 <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup">
@@ -165,9 +172,10 @@ et remplacer le lien par :
 ```
 
 `Site URL` doit pointer vers l'adresse de l'application (localhost en local,
-URL Vercel en production). Sans ce réglage, le lien par défaut passe par
-`/auth/callback` et exige d'être ouvert dans le navigateur qui a lancé
-l'inscription ; sinon Supabase répond `pkce_code_verifier_not_found`.
+URL Vercel en production). La route `/auth/confirm` vérifie le token hash et
+fonctionne depuis n'importe quel navigateur. L'ancien `/auth/callback` reste en
+secours, mais exige d'ouvrir le lien dans le navigateur qui a lancé
+l'inscription, sinon Supabase répond `pkce_code_verifier_not_found`.
 
 Pour accéder à `/admin`, il faut ensuite attribuer le rôle admin à un compte :
 
